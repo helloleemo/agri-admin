@@ -1,25 +1,38 @@
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
+import EditRoundedIcon from '@mui/icons-material/EditRounded'
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded'
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
 import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Box,
   Button,
   Chip,
-  CircularProgress,
-  InputAdornment,
+  IconButton,
   Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material'
-import { productService } from '@/api'
-import type { ProductResponse } from '@/api'
+import { DataGrid, type GridColDef } from '@mui/x-data-grid'
+import {
+  categoriesService,
+  productService,
+  type CategoryResponse,
+  type ProductCreatePayload,
+  type ProductResponse,
+  type ProductUpdatePayload,
+} from '@/api'
+import {
+  ProductDeleteDialog,
+  ProductFormDialog,
+  ProductViewDialog,
+  type ProductFormState,
+  type ProductStatusOption,
+  type ProductUnitFormRow,
+} from '@/pages/ProductDialogs'
 
 const currencyFormatter = new Intl.NumberFormat('zh-TW', {
   style: 'currency',
@@ -27,131 +40,501 @@ const currencyFormatter = new Intl.NumberFormat('zh-TW', {
   maximumFractionDigits: 0,
 })
 
+const statusOptions: ProductStatusOption[] = [
+  { value: 1, label: '啟用', color: 'success' },
+  { value: 2, label: '停用', color: 'warning' },
+  { value: 3, label: '刪除', color: 'default' },
+]
+
+const createEmptyUnit = (): ProductUnitFormRow => ({
+  unit_id: '',
+  price: '',
+  stock: '',
+})
+
+const createEmptyForm = (categoryId = ''): ProductFormState => ({
+  name: '',
+  category_id: categoryId,
+  origin: '',
+  description: '',
+  status_code: 1,
+  units: [createEmptyUnit()],
+})
+
+const formatDateTime = (value: string) => {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('zh-TW')
+}
+
+const normalizeText = (value: string) => value.trim()
+
+const toNullableText = (value: string) => {
+  const normalized = normalizeText(value)
+  return normalized ? normalized : null
+}
+
+const toIntegerOrNull = (value: string) => {
+  const normalized = normalizeText(value)
+  if (!normalized) {
+    return null
+  }
+
+  const parsed = Number(normalized)
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
+}
+
+const buildFormState = (product: ProductResponse): ProductFormState => ({
+  name: product.name,
+  category_id: product.category_id,
+  origin: product.origin ?? '',
+  description: product.description ?? '',
+  status_code: product.status_code,
+  units: product.units.length
+    ? product.units.map((unit) => ({
+        unit_id: unit.unit_id,
+        price: String(unit.price),
+        stock: String(unit.stock),
+      }))
+    : [createEmptyUnit()],
+})
+
 const ProductsPage = () => {
   const [products, setProducts] = useState<ProductResponse[]>([])
+  const [categories, setCategories] = useState<CategoryResponse[]>([])
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [actionLoading, setActionLoading] = useState(false)
+  const [pageError, setPageError] = useState('')
+  const [actionError, setActionError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view' | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<ProductResponse | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<ProductResponse | null>(null)
+  const [formState, setFormState] = useState<ProductFormState>(createEmptyForm())
 
   const fetchProducts = async () => {
     try {
       setLoading(true)
-      setError('')
-        const data = await productService.getList({ skip: 0, limit: 100 })
-      setProducts(data)
+      setPageError('')
+
+      const [productData, categoryData] = await Promise.all([
+        productService.getList({ skip: 0, limit: 100 }),
+        categoriesService.getList({ skip: 0, limit: 100 }),
+      ])
+
+      setProducts(productData)
+      setCategories(categoryData)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '載入商品資料失敗')
+      setPageError(err instanceof Error ? err.message : '載入商品資料失敗')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    void fetchProducts()
+    const loadInitialData = async () => {
+      await fetchProducts()
+    }
+
+    void loadInitialData()
   }, [])
+
+  const unitOptions = useMemo(() => {
+    const units = new Map<string, string>()
+
+    products.forEach((product) => {
+      product.units.forEach((unit) => {
+        if (!units.has(unit.unit_id)) {
+          units.set(unit.unit_id, unit.unit_name || unit.unit_id.slice(0, 8))
+        }
+      })
+    })
+
+    return [...units.entries()]
+      .map(([id, label]) => ({ id, label }))
+      .sort((left, right) => left.label.localeCompare(right.label, 'zh-TW'))
+  }, [products])
 
   const filteredProducts = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase()
+
     if (!normalizedKeyword) {
       return products
     }
-    return products.filter((product) => product.name.toLowerCase().includes(normalizedKeyword))
+
+    return products.filter((product) => {
+      const searchableText = [product.name, product.category_name, product.origin]
+        .filter((value): value is string => Boolean(value))
+        .join(' ')
+        .toLowerCase()
+
+      return searchableText.includes(normalizedKeyword)
+    })
   }, [keyword, products])
 
   const getPriceText = (product: ProductResponse) => {
     if (!product.units.length) {
       return '--'
     }
-    const minPrice = Math.min(...product.units.map((unit) => unit.price))
-    return currencyFormatter.format(minPrice)
+
+    const prices = product.units.map((unit) => unit.price)
+    const minPrice = Math.min(...prices)
+    const maxPrice = Math.max(...prices)
+
+    return minPrice === maxPrice
+      ? currencyFormatter.format(minPrice)
+      : `${currencyFormatter.format(minPrice)} ~ ${currencyFormatter.format(maxPrice)}`
   }
 
   const getStockCount = (product: ProductResponse) => {
     return product.units.reduce((sum, unit) => sum + unit.stock, 0)
   }
 
+  const openCreateDialog = () => {
+    setSelectedProduct(null)
+    setFormState(createEmptyForm(categories[0]?.id ?? ''))
+    setDialogMode('create')
+    setActionError('')
+  }
+
+  const openEditDialog = (product: ProductResponse) => {
+    setSelectedProduct(product)
+    setFormState(buildFormState(product))
+    setDialogMode('edit')
+    setActionError('')
+  }
+
+  const openViewDialog = (product: ProductResponse) => {
+    setSelectedProduct(product)
+    setDialogMode('view')
+    setActionError('')
+  }
+
+  const closeDialog = () => {
+    setDialogMode(null)
+    setSelectedProduct(null)
+    setActionError('')
+    setFormState(createEmptyForm(categories[0]?.id ?? ''))
+  }
+
+  const updateFormField = <K extends keyof ProductFormState>(field: K, value: ProductFormState[K]) => {
+    setFormState((current) => ({ ...current, [field]: value }))
+  }
+
+  const updateUnitField = (index: number, field: keyof ProductUnitFormRow, value: string) => {
+    setFormState((current) => ({
+      ...current,
+      units: current.units.map((unit, unitIndex) => (unitIndex === index ? { ...unit, [field]: value } : unit)),
+    }))
+  }
+
+  const addUnitRow = () => {
+    setFormState((current) => ({
+      ...current,
+      units: [...current.units, createEmptyUnit()],
+    }))
+  }
+
+  const removeUnitRow = (index: number) => {
+    setFormState((current) => ({
+      ...current,
+      units: current.units.length === 1 ? current.units : current.units.filter((_, unitIndex) => unitIndex !== index),
+    }))
+  }
+
+  const validateForm = () => {
+    if (!normalizeText(formState.name)) {
+      return '請輸入商品名稱'
+    }
+
+    if (!formState.category_id) {
+      return '請選擇商品分類'
+    }
+
+    if (!formState.units.length) {
+      return '請至少新增一筆商品單位'
+    }
+
+    const seenUnits = new Set<string>()
+
+    for (const [index, unit] of formState.units.entries()) {
+      if (!unit.unit_id) {
+        return `請選擇第 ${index + 1} 筆商品單位`
+      }
+
+      if (seenUnits.has(unit.unit_id)) {
+        return '商品單位不可重複'
+      }
+
+      seenUnits.add(unit.unit_id)
+
+      const price = toIntegerOrNull(unit.price)
+      if (price === null) {
+        return `第 ${index + 1} 筆單位的售價必須是大於等於 0 的整數`
+      }
+
+      const stock = toIntegerOrNull(unit.stock)
+      if (stock === null) {
+        return `第 ${index + 1} 筆單位的庫存必須是大於等於 0 的整數`
+      }
+    }
+
+    return ''
+  }
+
+  const buildPayload = () => {
+    const units = formState.units.map((unit) => ({
+      unit_id: unit.unit_id,
+      price: Number(unit.price),
+      stock: Number(unit.stock),
+    }))
+
+    const payload = {
+      name: normalizeText(formState.name),
+      category_id: formState.category_id,
+      origin: toNullableText(formState.origin),
+      description: toNullableText(formState.description),
+      status_code: formState.status_code,
+      units,
+    }
+
+    return payload satisfies ProductCreatePayload | ProductUpdatePayload
+  }
+
+  const handleSubmit = async () => {
+    const validationError = validateForm()
+    if (validationError) {
+      setActionError(validationError)
+      return
+    }
+
+    try {
+      setActionLoading(true)
+      setActionError('')
+
+      const payload = buildPayload()
+
+      if (dialogMode === 'create') {
+        await productService.create(payload as ProductCreatePayload)
+        setNotice('商品已新增')
+      } else if (dialogMode === 'edit' && selectedProduct) {
+        await productService.update(selectedProduct.id, payload as ProductUpdatePayload)
+        setNotice('商品已更新')
+      }
+
+      closeDialog()
+      await fetchProducts()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : '儲存商品失敗')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return
+    }
+
+    try {
+      setActionLoading(true)
+      setActionError('')
+      await productService.delete(deleteTarget.id)
+      setNotice('商品已刪除')
+      setDeleteTarget(null)
+      await fetchProducts()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : '刪除商品失敗')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const columns: GridColDef<ProductResponse>[] = [
+    {
+      field: 'name',
+      headerName: '商品名稱',
+      flex: 1.2,
+      minWidth: 180,
+    },
+    {
+      field: 'category_name',
+      headerName: '分類',
+      minWidth: 120,
+      valueGetter: (_, row) => row.category_name || '-',
+    },
+    {
+      field: 'price',
+      headerName: '售價',
+      minWidth: 140,
+      valueGetter: (_, row) => getPriceText(row),
+    },
+    {
+      field: 'stock',
+      headerName: '庫存',
+      minWidth: 100,
+      valueGetter: (_, row) => getStockCount(row),
+    },
+    {
+      field: 'status_code',
+      headerName: '狀態',
+      minWidth: 120,
+      renderCell: (params) => {
+        const status = statusOptions.find((item) => item.value === params.row.status_code)
+
+        return (
+          <Chip
+            label={status?.label ?? `狀態 ${params.row.status_code}`}
+            color={status?.color ?? 'default'}
+            size="small"
+            variant={params.row.status_code === 1 ? 'filled' : 'outlined'}
+          />
+        )
+      },
+    },
+    {
+      field: 'updated_at',
+      headerName: '更新時間',
+      minWidth: 170,
+      valueGetter: (_, row) => formatDateTime(row.updated_at),
+    },
+    {
+      field: 'actions',
+      headerName: '操作',
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      minWidth: 180,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={0.5} sx={{ height: '100%', alignItems: 'center' }}>
+          <IconButton size="small" color="primary" onClick={() => openViewDialog(params.row)}>
+            <VisibilityRoundedIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" color="primary" onClick={() => openEditDialog(params.row)}>
+            <EditRoundedIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" color="error" onClick={() => setDeleteTarget(params.row)}>
+            <DeleteOutlineRoundedIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      ),
+    },
+  ]
+
   return (
     <Paper sx={{ p: 2.4 }}>
       <Stack
         direction={{ xs: 'column', md: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', md: 'center' }}
         spacing={1.5}
-        sx={{ mb: 2.4 }}
+        sx={{ mb: 2.4, justifyContent: 'space-between', alignItems: { xs: 'stretch', md: 'center' } }}
       >
         <Box>
           <Typography variant="h5" sx={{ mb: 0.6 }}>
             商品管理
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            維護商品資訊、價格與庫存狀態
+            維護商品資料、分類、單位價格與庫存
           </Typography>
         </Box>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
           <TextField
             size="small"
-            placeholder="搜尋商品名稱"
+            placeholder="搜尋商品名稱、分類或產地"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon fontSize="small" />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: <SearchRoundedIcon fontSize="small" />,
+              },
             }}
           />
+          <Button variant="outlined" startIcon={<AddRoundedIcon />} onClick={openCreateDialog}>
+            新增商品
+          </Button>
           <Button variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={() => void fetchProducts()}>
             重新整理
           </Button>
         </Stack>
       </Stack>
 
-      {error ? <Alert severity="error" sx={{ mb: 1.5 }}>{error}</Alert> : null}
-
-      {loading ? (
-        <Stack alignItems="center" sx={{ py: 4 }}>
-          <CircularProgress size={28} />
-        </Stack>
+      {pageError ? (
+        <Alert severity="error" sx={{ mb: 1.5 }}>
+          {pageError}
+        </Alert>
       ) : null}
 
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>商品名稱</TableCell>
-            <TableCell>分類</TableCell>
-            <TableCell>售價</TableCell>
-            <TableCell>庫存</TableCell>
-            <TableCell align="right">操作</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {filteredProducts.map((product) => (
-            <TableRow key={product.name} hover>
-              <TableCell>{product.name}</TableCell>
-              <TableCell>{product.category_name || '-'}</TableCell>
-              <TableCell>{getPriceText(product)}</TableCell>
-              <TableCell>{getStockCount(product)}</TableCell>
-              <TableCell align="right">
-                <Chip
-                  label={product.status_code === 1 ? '啟用' : '停用'}
-                  color={product.status_code === 1 ? 'success' : 'default'}
-                  size="small"
-                  variant={product.status_code === 1 ? 'filled' : 'outlined'}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
-          {!filteredProducts.length ? (
-            <TableRow>
-              <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                尚無商品資料
-              </TableCell>
-            </TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
+      {notice ? (
+        <Alert severity="success" sx={{ mb: 1.5 }} onClose={() => setNotice('')}>
+          {notice}
+        </Alert>
+      ) : null}
+
+      <DataGrid
+        autoHeight
+        rows={filteredProducts}
+        columns={columns}
+        getRowId={(row) => row.id}
+        loading={loading}
+        disableRowSelectionOnClick
+        pageSizeOptions={[10, 25, 50]}
+        initialState={{
+          pagination: {
+            paginationModel: { page: 0, pageSize: 10 },
+          },
+        }}
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          bgcolor: 'background.paper',
+          '& .MuiDataGrid-columnHeaders': {
+            bgcolor: 'grey.50',
+          },
+          '& .MuiDataGrid-row:hover': {
+            bgcolor: 'rgba(31, 109, 87, 0.04)',
+          },
+        }}
+      />
+
+      <ProductFormDialog
+        open={dialogMode === 'create' || dialogMode === 'edit'}
+        mode={dialogMode === 'create' ? 'create' : 'edit'}
+        actionError={actionError}
+        formState={formState}
+        categories={categories}
+        statusOptions={statusOptions}
+        unitOptions={unitOptions}
+        actionLoading={actionLoading}
+        onClose={closeDialog}
+        onSubmit={() => void handleSubmit()}
+        onNameChange={(value) => updateFormField('name', value)}
+        onCategoryChange={(value) => updateFormField('category_id', value)}
+        onOriginChange={(value) => updateFormField('origin', value)}
+        onStatusChange={(value) => updateFormField('status_code', value)}
+        onDescriptionChange={(value) => updateFormField('description', value)}
+        onAddUnitRow={addUnitRow}
+        onUnitFieldChange={updateUnitField}
+        onRemoveUnitRow={removeUnitRow}
+      />
+
+      <ProductViewDialog
+        open={dialogMode === 'view' && Boolean(selectedProduct)}
+        selectedProduct={selectedProduct}
+        statusOptions={statusOptions}
+        currencyFormatter={currencyFormatter}
+        formatDateTime={formatDateTime}
+        onClose={closeDialog}
+      />
+
+      <ProductDeleteDialog
+        open={Boolean(deleteTarget)}
+        deleteTarget={deleteTarget}
+        actionError={actionError}
+        actionLoading={actionLoading}
+        onClose={() => setDeleteTarget(null)}
+        onDelete={() => void handleDelete()}
+      />
     </Paper>
   )
 }

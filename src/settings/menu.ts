@@ -10,6 +10,14 @@ const menuList = [
     link: `/${PATHS.products}`,
   },
   {
+    label: '分類管理',
+    link: `/${PATHS.categories}`,
+  },
+  {
+    label: '單位管理',
+    link: `/${PATHS.units}`,
+  },
+  {
     label: '訂單管理',
     link: `/${PATHS.orders}`,
   },

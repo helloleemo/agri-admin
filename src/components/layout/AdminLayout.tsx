@@ -1,7 +1,9 @@
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded'
+import CategoryRoundedIcon from '@mui/icons-material/CategoryRounded'
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded'
 import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded'
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded'
+import StraightenRoundedIcon from '@mui/icons-material/StraightenRounded'
 import { Box, Container, Divider, Stack, Typography } from '@mui/material'
 import { Outlet, useLocation, Link as RouterLink } from 'react-router-dom'
 import menuList from '@/settings/menu'
@@ -9,6 +11,8 @@ import menuList from '@/settings/menu'
 const iconMap = {
   儀表板: <DashboardRoundedIcon fontSize="small" />,
   商品管理: <Inventory2RoundedIcon fontSize="small" />,
+  分類管理: <CategoryRoundedIcon fontSize="small" />,
+  單位管理: <StraightenRoundedIcon fontSize="small" />,
   訂單管理: <ReceiptLongRoundedIcon fontSize="small" />,
   使用者管理: <PeopleAltRoundedIcon fontSize="small" />,
 }

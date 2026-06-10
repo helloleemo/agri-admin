@@ -4,6 +4,8 @@ import AdminLayout from '@/components/layout/AdminLayout'
 import RequireAuth from '@/components/auth/RequireAuth'
 import DashboardPage from '@/pages/DashboardPage'
 import ProductsPage from '@/pages/ProductsPage'
+import CategoriesPage from '@/pages/CategoriesPage'
+import UnitsPage from '@/pages/UnitsPage'
 import OrdersPage from '@/pages/OrdersPage'
 import UsersPage from '@/pages/UsersPage'
 import NotFoundPage from '@/pages/NotFoundPage'
@@ -32,6 +34,14 @@ const router = createBrowserRouter([
           {
             path: PATHS.products,
             element: <ProductsPage />,
+          },
+          {
+            path: PATHS.categories,
+            element: <CategoriesPage />,
+          },
+          {
+            path: PATHS.units,
+            element: <UnitsPage />,
           },
           {
             path: PATHS.orders,
