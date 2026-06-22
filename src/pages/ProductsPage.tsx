@@ -1,32 +1,27 @@
-import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import EditRoundedIcon from '@mui/icons-material/EditRounded'
-import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded'
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
 import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
-  Box,
-  Button,
   Chip,
   IconButton,
   Paper,
   Stack,
-  TextField,
-  Typography,
 } from '@mui/material'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
+import { DeleteConfirmDialog } from '@/components/dialogs'
 import {
   categoriesService,
+  imagesService,
   productService,
   type CategoryResponse,
   type ProductCreatePayload,
   type ProductResponse,
   type ProductUpdatePayload,
 } from '@/api'
+import PageToolbar from '@/components/layout/PageToolbar'
 import {
-  ProductDeleteDialog,
   ProductFormDialog,
   ProductViewDialog,
   type ProductFormState,
@@ -67,6 +62,7 @@ const formatDateTime = (value: string) => {
 }
 
 const normalizeText = (value: string) => value.trim()
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '')
 
 const toNullableText = (value: string) => {
   const normalized = normalizeText(value)
@@ -106,11 +102,23 @@ const ProductsPage = () => {
   const [actionLoading, setActionLoading] = useState(false)
   const [pageError, setPageError] = useState('')
   const [actionError, setActionError] = useState('')
+  const [imageActionError, setImageActionError] = useState('')
   const [notice, setNotice] = useState('')
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view' | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<ProductResponse | null>(null)
+  const [primaryImageId, setPrimaryImageId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<ProductResponse | null>(null)
   const [formState, setFormState] = useState<ProductFormState>(createEmptyForm())
+  const [imageActionLoading, setImageActionLoading] = useState(false)
+  const [createImageFiles, setCreateImageFiles] = useState<File[]>([])
+  const [createPrimaryIndex, setCreatePrimaryIndex] = useState(0)
+
+  const resolveImageUrl = (fileUrl: string) => {
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+      return fileUrl
+    }
+    return `${API_BASE_URL}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`
+  }
 
   const fetchProducts = async () => {
     try {
@@ -192,29 +200,191 @@ const ProductsPage = () => {
 
   const openCreateDialog = () => {
     setSelectedProduct(null)
+    setPrimaryImageId(null)
+    setCreateImageFiles([])
+    setCreatePrimaryIndex(0)
     setFormState(createEmptyForm(categories[0]?.id ?? ''))
     setDialogMode('create')
     setActionError('')
+    setImageActionError('')
   }
 
   const openEditDialog = (product: ProductResponse) => {
     setSelectedProduct(product)
+    setPrimaryImageId(product.images?.find((image) => image.is_primary)?.id ?? null)
     setFormState(buildFormState(product))
+    setCreateImageFiles([])
+    setCreatePrimaryIndex(0)
     setDialogMode('edit')
     setActionError('')
+    setImageActionError('')
   }
 
   const openViewDialog = (product: ProductResponse) => {
     setSelectedProduct(product)
+    setPrimaryImageId(product.images?.find((image) => image.is_primary)?.id ?? null)
     setDialogMode('view')
+    setCreateImageFiles([])
+    setCreatePrimaryIndex(0)
     setActionError('')
+    setImageActionError('')
   }
 
   const closeDialog = () => {
     setDialogMode(null)
     setSelectedProduct(null)
+    setPrimaryImageId(null)
     setActionError('')
+    setImageActionError('')
+    setCreateImageFiles([])
+    setCreatePrimaryIndex(0)
     setFormState(createEmptyForm(categories[0]?.id ?? ''))
+  }
+
+  const handleCreateImageFilesChange = (files: File[]) => {
+    if (files.some((file) => !file.type.startsWith('image/'))) {
+      setImageActionError('請選擇圖片檔案')
+      return
+    }
+
+    setImageActionError('')
+    setCreateImageFiles((current) => [...current, ...files])
+  }
+
+  const handleRemoveCreateImage = (index: number) => {
+    setCreateImageFiles((current) => {
+      const next = current.filter((_, currentIndex) => currentIndex !== index)
+      setCreatePrimaryIndex((primaryIndex) => {
+        if (!next.length) {
+          return 0
+        }
+        if (index < primaryIndex) {
+          return primaryIndex - 1
+        }
+        if (index === primaryIndex) {
+          return 0
+        }
+        return primaryIndex
+      })
+      return next
+    })
+  }
+
+  const refreshSelectedProduct = async (productId: string) => {
+    const latestProduct = await productService.getById(productId)
+    const latestPrimaryImageId = latestProduct.images?.find((image) => image.is_primary)?.id ?? null
+
+    setProducts((current) =>
+      current.map((product) => (product.id === latestProduct.id ? latestProduct : product)),
+    )
+    setSelectedProduct(latestProduct)
+    setPrimaryImageId((current) => {
+      if (current && latestProduct.images?.some((image) => image.id === current)) {
+        return current
+      }
+      return latestPrimaryImageId
+    })
+  }
+
+  const applyPrimaryImageLocally = (productId: string, imageId: string) => {
+    const updateProductPrimary = (product: ProductResponse) => {
+      if (product.id !== productId || !product.images?.length) {
+        return product
+      }
+
+      return {
+        ...product,
+        images: product.images.map((image) => ({
+          ...image,
+          is_primary: image.id === imageId,
+        })),
+      }
+    }
+
+    setSelectedProduct((current) => (current ? updateProductPrimary(current) : current))
+    setProducts((current) => current.map(updateProductPrimary))
+    setPrimaryImageId(imageId)
+  }
+
+  const handleUploadImages = async (files: File[]) => {
+    if (!selectedProduct) {
+      return
+    }
+
+    if (!files.length) {
+      return
+    }
+
+    if (files.some((file) => !file.type.startsWith('image/'))) {
+      setImageActionError('請選擇圖片檔案')
+      return
+    }
+
+    const currentImages = selectedProduct.images ?? []
+    const sortOrderStart = currentImages.length
+      ? Math.max(...currentImages.map((image) => image.sort_order)) + 1
+      : 0
+    const hasPrimary = currentImages.some((image) => image.is_primary)
+
+    try {
+      setImageActionLoading(true)
+      setImageActionError('')
+
+      await imagesService.createBatch({
+        product_id: selectedProduct.id,
+        files,
+        primary_index: hasPrimary ? undefined : 0,
+        sort_order_start: sortOrderStart,
+      })
+
+      await refreshSelectedProduct(selectedProduct.id)
+      setNotice('圖片已上傳')
+    } catch (err) {
+      setImageActionError(err instanceof Error ? err.message : '圖片上傳失敗')
+    } finally {
+      setImageActionLoading(false)
+    }
+  }
+
+  const handleSetPrimaryImage = async (imageId: string) => {
+    if (!selectedProduct) {
+      return
+    }
+
+    const productId = selectedProduct.id
+
+    try {
+      setImageActionLoading(true)
+      setImageActionError('')
+
+      await imagesService.update(imageId, { is_primary: true })
+      applyPrimaryImageLocally(productId, imageId)
+      await refreshSelectedProduct(productId)
+      setNotice('主圖已更新')
+    } catch (err) {
+      setImageActionError(err instanceof Error ? err.message : '主圖更新失敗')
+    } finally {
+      setImageActionLoading(false)
+    }
+  }
+
+  const handleDeleteImage = async (imageId: string) => {
+    if (!selectedProduct) {
+      return
+    }
+
+    try {
+      setImageActionLoading(true)
+      setImageActionError('')
+
+      await imagesService.delete(imageId)
+      await refreshSelectedProduct(selectedProduct.id)
+      setNotice('圖片已刪除')
+    } catch (err) {
+      setImageActionError(err instanceof Error ? err.message : '圖片刪除失敗')
+    } finally {
+      setImageActionLoading(false)
+    }
   }
 
   const updateFormField = <K extends keyof ProductFormState>(field: K, value: ProductFormState[K]) => {
@@ -282,6 +452,43 @@ const ProductsPage = () => {
     return ''
   }
 
+  const isSubmitDisabled = useMemo(() => {
+    if (actionLoading) {
+      return true
+    }
+
+    if (!unitOptions.length) {
+      return true
+    }
+
+    if (!normalizeText(formState.name)) {
+      return true
+    }
+
+    if (!formState.category_id) {
+      return true
+    }
+
+    if (!formState.units.length) {
+      return true
+    }
+
+    const seenUnits = new Set<string>()
+    for (const unit of formState.units) {
+      if (!unit.unit_id || seenUnits.has(unit.unit_id)) {
+        return true
+      }
+
+      seenUnits.add(unit.unit_id)
+
+      if (toIntegerOrNull(unit.price) === null || toIntegerOrNull(unit.stock) === null) {
+        return true
+      }
+    }
+
+    return false
+  }, [actionLoading, formState, unitOptions])
+
   const buildPayload = () => {
     const units = formState.units.map((unit) => ({
       unit_id: unit.unit_id,
@@ -315,7 +522,17 @@ const ProductsPage = () => {
       const payload = buildPayload()
 
       if (dialogMode === 'create') {
-        await productService.create(payload as ProductCreatePayload)
+        const createdProduct = await productService.create(payload as ProductCreatePayload)
+
+        if (createImageFiles.length) {
+          await imagesService.createBatch({
+            product_id: createdProduct.id,
+            files: createImageFiles,
+            primary_index: Math.min(createPrimaryIndex, createImageFiles.length - 1),
+            sort_order_start: 0,
+          })
+        }
+
         setNotice('商品已新增')
       } else if (dialogMode === 'edit' && selectedProduct) {
         await productService.update(selectedProduct.id, payload as ProductUpdatePayload)
@@ -423,40 +640,16 @@ const ProductsPage = () => {
 
   return (
     <Paper sx={{ p: 2.4 }}>
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1.5}
-        sx={{ mb: 2.4, justifyContent: 'space-between', alignItems: { xs: 'stretch', md: 'center' } }}
-      >
-        <Box>
-          <Typography variant="h5" sx={{ mb: 0.6 }}>
-            商品管理
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            維護商品資料、分類、單位價格與庫存
-          </Typography>
-        </Box>
-
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
-          <TextField
-            size="small"
-            placeholder="搜尋商品名稱、分類或產地"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            slotProps={{
-              input: {
-                startAdornment: <SearchRoundedIcon fontSize="small" />,
-              },
-            }}
-          />
-          <Button variant="outlined" startIcon={<AddRoundedIcon />} onClick={openCreateDialog}>
-            新增商品
-          </Button>
-          <Button variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={() => void fetchProducts()}>
-            重新整理
-          </Button>
-        </Stack>
-      </Stack>
+      <PageToolbar
+        title="商品管理"
+        description="維護商品資料、分類、單位價格與庫存"
+        keyword={keyword}
+        searchPlaceholder="搜尋商品名稱、分類或產地"
+        onKeywordChange={setKeyword}
+        addLabel="新增商品"
+        onAdd={openCreateDialog}
+        onRefresh={() => void fetchProducts()}
+      />
 
       {pageError ? (
         <Alert severity="error" sx={{ mb: 1.5 }}>
@@ -506,6 +699,12 @@ const ProductsPage = () => {
         statusOptions={statusOptions}
         unitOptions={unitOptions}
         actionLoading={actionLoading}
+        submitDisabled={isSubmitDisabled}
+        selectedProduct={selectedProduct}
+        primaryImageId={primaryImageId}
+        imageActionLoading={imageActionLoading}
+        imageActionError={imageActionError}
+        resolveImageUrl={resolveImageUrl}
         onClose={closeDialog}
         onSubmit={() => void handleSubmit()}
         onNameChange={(value) => updateFormField('name', value)}
@@ -516,6 +715,14 @@ const ProductsPage = () => {
         onAddUnitRow={addUnitRow}
         onUnitFieldChange={updateUnitField}
         onRemoveUnitRow={removeUnitRow}
+        createImageFiles={createImageFiles}
+        createPrimaryIndex={createPrimaryIndex}
+        onCreateImageFilesChange={handleCreateImageFilesChange}
+        onCreatePrimaryIndexChange={setCreatePrimaryIndex}
+        onRemoveCreateImage={handleRemoveCreateImage}
+        onUploadImages={(files) => void handleUploadImages(files)}
+        onSetPrimaryImage={(imageId) => void handleSetPrimaryImage(imageId)}
+        onDeleteImage={(imageId) => void handleDeleteImage(imageId)}
       />
 
       <ProductViewDialog
@@ -524,16 +731,18 @@ const ProductsPage = () => {
         statusOptions={statusOptions}
         currencyFormatter={currencyFormatter}
         formatDateTime={formatDateTime}
+        resolveImageUrl={resolveImageUrl}
         onClose={closeDialog}
       />
 
-      <ProductDeleteDialog
+      <DeleteConfirmDialog
         open={Boolean(deleteTarget)}
-        deleteTarget={deleteTarget}
-        actionError={actionError}
-        actionLoading={actionLoading}
+        title="刪除商品"
+        targetName={deleteTarget?.name || ''}
+        error={actionError}
+        loading={actionLoading}
         onClose={() => setDeleteTarget(null)}
-        onDelete={() => void handleDelete()}
+        onConfirm={() => void handleDelete()}
       />
     </Paper>
   )

@@ -1,10 +1,11 @@
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded'
 import CategoryRoundedIcon from '@mui/icons-material/CategoryRounded'
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded'
+import TuneRoundedIcon from '@mui/icons-material/TuneRounded'
 import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded'
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded'
 import StraightenRoundedIcon from '@mui/icons-material/StraightenRounded'
-import { Box, Container, Divider, Stack, Typography } from '@mui/material'
+import { Box, Divider, Stack, Typography } from '@mui/material'
 import { Outlet, useLocation, Link as RouterLink } from 'react-router-dom'
 import menuList from '@/settings/menu'
 
@@ -13,6 +14,7 @@ const iconMap = {
   商品管理: <Inventory2RoundedIcon fontSize="small" />,
   分類管理: <CategoryRoundedIcon fontSize="small" />,
   單位管理: <StraightenRoundedIcon fontSize="small" />,
+  庫存調整: <TuneRoundedIcon fontSize="small" />,
   訂單管理: <ReceiptLongRoundedIcon fontSize="small" />,
   使用者管理: <PeopleAltRoundedIcon fontSize="small" />,
 }
@@ -41,18 +43,18 @@ const AdminLayout = () => {
               'radial-gradient(circle at 12% 18%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 42%), radial-gradient(circle at 82% 30%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 40%)',
           }}
         />
-        <Container sx={{ position: 'relative', zIndex: 1, py: { xs: 3, md: 4 } }}>
+        <Box sx={{ position: 'relative', zIndex: 1, py: { xs: 3, md: 4 }, px: { xs: 2, md: 4 } }}>
           <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.6 }}>
             AGRI ADMIN
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,0.86)' }}>
             農業電商後台管理中心
           </Typography>
-        </Container>
+        </Box>
       </Box>
 
-      <Container sx={{ py: { xs: 3, md: 4 } }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2.5} alignItems="stretch">
+      <Box sx={{ py: { xs: 3, md: 4 }, px: { xs: 2, md: 4 } }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2.5} sx={{ alignItems: 'stretch' }}>
           <Box
             component="aside"
             sx={{
@@ -103,7 +105,7 @@ const AdminLayout = () => {
             <Outlet />
           </Box>
         </Stack>
-      </Container>
+      </Box>
     </Box>
   )
 }

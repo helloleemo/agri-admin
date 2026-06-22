@@ -19,3 +19,10 @@ export interface CreateImagePayload {
   is_primary?: boolean
   sort_order?: number
 }
+
+export interface CreateImageBatchPayload {
+  product_id: string
+  files: File[]
+  primary_index?: number
+  sort_order_start?: number
+}

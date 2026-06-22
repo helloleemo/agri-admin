@@ -18,6 +18,10 @@ const menuList = [
     link: `/${PATHS.units}`,
   },
   {
+    label: '庫存調整',
+    link: `/${PATHS.inventories}`,
+  },
+  {
     label: '訂單管理',
     link: `/${PATHS.orders}`,
   },

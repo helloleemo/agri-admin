@@ -48,6 +48,12 @@ type ProductFormDialogProps = {
   statusOptions: ProductStatusOption[]
   unitOptions: Array<{ id: string; label: string }>
   actionLoading: boolean
+  submitDisabled: boolean
+  selectedProduct: ProductResponse | null
+  primaryImageId: string | null
+  imageActionLoading: boolean
+  imageActionError: string
+  resolveImageUrl: (fileUrl: string) => string
   onClose: () => void
   onSubmit: () => void
   onNameChange: (value: string) => void
@@ -58,6 +64,14 @@ type ProductFormDialogProps = {
   onAddUnitRow: () => void
   onUnitFieldChange: (index: number, field: keyof ProductUnitFormRow, value: string) => void
   onRemoveUnitRow: (index: number) => void
+  createImageFiles: File[]
+  createPrimaryIndex: number
+  onCreateImageFilesChange: (files: File[]) => void
+  onCreatePrimaryIndexChange: (index: number) => void
+  onRemoveCreateImage: (index: number) => void
+  onUploadImages: (files: File[]) => void
+  onSetPrimaryImage: (imageId: string) => void
+  onDeleteImage: (imageId: string) => void
 }
 
 export const ProductFormDialog = ({
@@ -69,6 +83,12 @@ export const ProductFormDialog = ({
   statusOptions,
   unitOptions,
   actionLoading,
+  submitDisabled,
+  selectedProduct,
+  primaryImageId,
+  imageActionLoading,
+  imageActionError,
+  resolveImageUrl,
   onClose,
   onSubmit,
   onNameChange,
@@ -79,6 +99,14 @@ export const ProductFormDialog = ({
   onAddUnitRow,
   onUnitFieldChange,
   onRemoveUnitRow,
+  createImageFiles,
+  createPrimaryIndex,
+  onCreateImageFilesChange,
+  onCreatePrimaryIndexChange,
+  onRemoveCreateImage,
+  onUploadImages,
+  onSetPrimaryImage,
+  onDeleteImage,
 }: ProductFormDialogProps) => {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
@@ -185,11 +213,182 @@ export const ProductFormDialog = ({
               </Paper>
             ))}
           </Stack>
+
+          {mode === 'create' ? (
+            <>
+              <Divider />
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  商品圖片
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  可先挑選圖片，按儲存後會自動上傳到新商品。
+                </Typography>
+                <Box sx={{ mt: 1 }}>
+                  <Button component="label" variant="outlined" size="small" disabled={actionLoading}>
+                    選擇圖片
+                    <input
+                      hidden
+                      multiple
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      onChange={(event) => {
+                        const files = Array.from(event.target.files ?? [])
+                        if (files.length) {
+                          onCreateImageFilesChange(files)
+                        }
+                        event.currentTarget.value = ''
+                      }}
+                    />
+                  </Button>
+                </Box>
+
+                <Stack spacing={1} sx={{ mt: 1.5 }}>
+                  {createImageFiles.length ? (
+                    createImageFiles.map((file, index) => {
+                      const isPrimary = index === createPrimaryIndex
+                      return (
+                        <Paper key={`${file.name}-${index}`} variant="outlined" sx={{ p: 1.5 }}>
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
+                            <Stack spacing={0.5} sx={{ flex: 1 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                {isPrimary ? '主圖' : '附圖'} · {file.name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {(file.size / 1024).toFixed(1)} KB
+                              </Typography>
+                            </Stack>
+                            <Stack direction={{ xs: 'row', sm: 'column' }} spacing={1}>
+                              <Button
+                                size="small"
+                                variant={isPrimary ? 'contained' : 'outlined'}
+                                disabled={actionLoading || isPrimary}
+                                onClick={() => onCreatePrimaryIndexChange(index)}
+                              >
+                                設為主圖
+                              </Button>
+                              <Button
+                                color="error"
+                                size="small"
+                                variant="text"
+                                startIcon={<DeleteOutlineRoundedIcon />}
+                                disabled={actionLoading}
+                                onClick={() => onRemoveCreateImage(index)}
+                              >
+                                移除
+                              </Button>
+                            </Stack>
+                          </Stack>
+                        </Paper>
+                      )
+                    })
+                  ) : (
+                    <Typography color="text.secondary">目前沒有待上傳圖片</Typography>
+                  )}
+                </Stack>
+              </Box>
+            </>
+          ) : null}
+
+          {mode === 'edit' && selectedProduct ? (
+            <>
+              <Divider />
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  商品圖片
+                </Typography>
+                {imageActionError ? (
+                  <Alert severity="error" sx={{ mt: 1 }}>
+                    {imageActionError}
+                  </Alert>
+                ) : null}
+                <Box sx={{ mt: 1 }}>
+                  <Button component="label" variant="outlined" size="small" disabled={imageActionLoading}>
+                    {imageActionLoading ? '處理中...' : '批次上傳圖片'}
+                    <input
+                      hidden
+                      multiple
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      onChange={(event) => {
+                        const files = Array.from(event.target.files ?? [])
+                        if (files.length) {
+                          onUploadImages(files)
+                        }
+                        event.currentTarget.value = ''
+                      }}
+                    />
+                  </Button>
+                </Box>
+
+                <Stack spacing={1} sx={{ mt: 1.5 }}>
+                  {selectedProduct.images?.length ? (
+                    selectedProduct.images
+                      .slice()
+                      .sort((left, right) => left.sort_order - right.sort_order)
+                      .map((image) => {
+                        const isPrimary = image.id === primaryImageId
+
+                        return (
+                        <Paper key={image.id} variant="outlined" sx={{ p: 1.5 }}>
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
+                            <Box
+                              component="img"
+                              src={resolveImageUrl(image.file_url)}
+                              alt={selectedProduct.name}
+                              sx={{
+                                width: { xs: '100%', sm: 120 },
+                                height: { xs: 180, sm: 90 },
+                                objectFit: 'cover',
+                                borderRadius: 1,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                              }}
+                            />
+                            <Stack spacing={0.5} sx={{ flex: 1 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                {isPrimary ? '主圖' : '附圖'} · {image.sort_order}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-all' }}>
+                                {image.file_url}
+                              </Typography>
+                            </Stack>
+                            <Stack direction={{ xs: 'row', sm: 'column' }} spacing={1}>
+                              <Button
+                                size="small"
+                                variant={isPrimary ? 'contained' : 'outlined'}
+                                disabled={imageActionLoading || isPrimary}
+                                onClick={() => onSetPrimaryImage(image.id)}
+                              >
+                                設為主圖
+                              </Button>
+                              <Button
+                                color="error"
+                                size="small"
+                                variant="text"
+                                startIcon={<DeleteOutlineRoundedIcon />}
+                                disabled={imageActionLoading}
+                                onClick={() => onDeleteImage(image.id)}
+                              >
+                                刪除
+                              </Button>
+                            </Stack>
+                          </Stack>
+                        </Paper>
+                        )
+                      })
+                  ) : (
+                    <Typography color="text.secondary">目前沒有圖片</Typography>
+                  )}
+                </Stack>
+              </Box>
+            </>
+          ) : null}
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>取消</Button>
-        <Button onClick={onSubmit} variant="contained" disabled={actionLoading || !unitOptions.length}>
+        <Button onClick={onSubmit} variant="contained" disabled={actionLoading || submitDisabled}>
           {actionLoading ? '儲存中...' : '儲存'}
         </Button>
       </DialogActions>
@@ -203,6 +402,7 @@ type ProductViewDialogProps = {
   statusOptions: ProductStatusOption[]
   currencyFormatter: Intl.NumberFormat
   formatDateTime: (value: string) => string
+  resolveImageUrl: (fileUrl: string) => string
   onClose: () => void
 }
 
@@ -212,6 +412,7 @@ export const ProductViewDialog = ({
   statusOptions,
   currencyFormatter,
   formatDateTime,
+  resolveImageUrl,
   onClose,
 }: ProductViewDialogProps) => {
   return (
@@ -300,13 +501,28 @@ export const ProductViewDialog = ({
                 {selectedProduct.images?.length ? (
                   selectedProduct.images.map((image) => (
                     <Paper key={image.id} variant="outlined" sx={{ p: 1.5 }}>
-                      <Stack spacing={0.5}>
-                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                          {image.is_primary ? '主圖' : '附圖'} · {image.sort_order}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-all' }}>
-                          {image.file_url}
-                        </Typography>
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
+                        <Box
+                          component="img"
+                          src={resolveImageUrl(image.file_url)}
+                          alt={selectedProduct.name}
+                          sx={{
+                            width: { xs: '100%', sm: 120 },
+                            height: { xs: 180, sm: 90 },
+                            objectFit: 'cover',
+                            borderRadius: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        />
+                        <Stack spacing={0.5} sx={{ flex: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                            {image.is_primary ? '主圖' : '附圖'} · {image.sort_order}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-all' }}>
+                            {image.file_url}
+                          </Typography>
+                        </Stack>
                       </Stack>
                     </Paper>
                   ))
@@ -325,40 +541,3 @@ export const ProductViewDialog = ({
   )
 }
 
-type ProductDeleteDialogProps = {
-  open: boolean
-  deleteTarget: ProductResponse | null
-  actionError: string
-  actionLoading: boolean
-  onClose: () => void
-  onDelete: () => void
-}
-
-export const ProductDeleteDialog = ({
-  open,
-  deleteTarget,
-  actionError,
-  actionLoading,
-  onClose,
-  onDelete,
-}: ProductDeleteDialogProps) => {
-  return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>刪除商品</DialogTitle>
-      <DialogContent dividers>
-        <Typography>確定要刪除「{deleteTarget?.name || ''}」嗎？這個操作無法復原。</Typography>
-        {actionError ? (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {actionError}
-          </Alert>
-        ) : null}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>取消</Button>
-        <Button color="error" variant="contained" onClick={onDelete} disabled={actionLoading}>
-          {actionLoading ? '刪除中...' : '刪除'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  )
-}

@@ -122,7 +122,7 @@ const DashboardPage = () => {
       {error ? <Alert severity="error">{error}</Alert> : null}
 
       {loading ? (
-        <Stack alignItems="center" sx={{ py: 6 }}>
+        <Stack sx={{ py: 6, alignItems: 'center' }}>
           <CircularProgress />
         </Stack>
       ) : null}
@@ -131,7 +131,7 @@ const DashboardPage = () => {
         {statCards.map((card) => (
           <Grid key={card.label} size={{ xs: 12, sm: 6, md: 4 }}>
             <Paper sx={{ p: 2.2 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 0.8 }}>
                     {card.label}
@@ -165,7 +165,7 @@ const DashboardPage = () => {
               </TableHead>
               <TableBody>
                 {latestOrders.map((order) => (
-                  <TableRow key={order.no} hover>
+                  <TableRow key={order.id} hover>
                     <TableCell>{order.order_no || order.id.slice(0, 8)}</TableCell>
                     <TableCell>{order.user_name || '未知使用者'}</TableCell>
                     <TableCell>{order.items.length} 項</TableCell>
@@ -186,7 +186,7 @@ const DashboardPage = () => {
 
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 2.2 }}>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.2 }}>
+            <Stack direction="row" spacing={1} sx={{ mb: 1.2, alignItems: 'center' }}>
               <WarningAmberRoundedIcon color="warning" />
               <Typography variant="h6">低庫存提醒</Typography>
             </Stack>

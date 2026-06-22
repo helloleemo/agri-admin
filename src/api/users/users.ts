@@ -21,6 +21,9 @@ export const usersService = {
   update: async (id: string, payload: UserUpdatePayload) => {
     return PATCH<UserResponse>(BASE_URL, API_ENDPOINT.USERS_ID(id), payload)
   },
+  verifyEmail: async (id: string) => {
+    return PATCH<UserResponse>(BASE_URL, API_ENDPOINT.USERS_VERIFY_EMAIL(id))
+  },
   delete: async (id: string) => {
     return DELETE<DeletedData>(BASE_URL, API_ENDPOINT.USERS_ID(id))
   },

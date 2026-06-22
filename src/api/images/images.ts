@@ -2,7 +2,12 @@ import BASE_URL from '../base/apiBaseUrl'
 import { API_ENDPOINT } from '../base/apiEndpoint'
 import { DELETE, GET, PUT } from '../base/apiMethods'
 import { createHeader, handleResponse } from '../base/apiMethods'
-import type { CreateImagePayload, ImageResponse, ImageUpdatePayload } from '../types/image'
+import type {
+  CreateImageBatchPayload,
+  CreateImagePayload,
+  ImageResponse,
+  ImageUpdatePayload,
+} from '../types/image'
 
 interface DeletedData {
   id: string
@@ -29,6 +34,30 @@ export const imagesService = {
     })
 
     return handleResponse<ImageResponse>(res)
+  },
+  createBatch: async (payload: CreateImageBatchPayload) => {
+    const form = new FormData()
+    form.append('product_id', payload.product_id)
+    payload.files.forEach((file) => {
+      form.append('files', file)
+    })
+
+    if (typeof payload.primary_index === 'number') {
+      form.append('primary_index', String(payload.primary_index))
+    }
+
+    form.append('sort_order_start', String(payload.sort_order_start ?? 0))
+
+    const headers = createHeader()
+    delete headers['Content-Type']
+
+    const res = await fetch(`${BASE_URL}${API_ENDPOINT.IMAGES_BATCH}`, {
+      method: 'POST',
+      headers,
+      body: form,
+    })
+
+    return handleResponse<ImageResponse[]>(res)
   },
   update: async (imageId: string, payload: ImageUpdatePayload) => {
     return PUT<ImageResponse>(BASE_URL, API_ENDPOINT.IMAGES_ID(imageId), payload)

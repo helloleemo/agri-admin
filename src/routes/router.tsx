@@ -6,6 +6,7 @@ import DashboardPage from '@/pages/DashboardPage'
 import ProductsPage from '@/pages/ProductsPage'
 import CategoriesPage from '@/pages/CategoriesPage'
 import UnitsPage from '@/pages/UnitsPage'
+import InventoriesPage from '@/pages/InventoriesPage'
 import OrdersPage from '@/pages/OrdersPage'
 import UsersPage from '@/pages/UsersPage'
 import NotFoundPage from '@/pages/NotFoundPage'
@@ -42,6 +43,10 @@ const router = createBrowserRouter([
           {
             path: PATHS.units,
             element: <UnitsPage />,
+          },
+          {
+            path: PATHS.inventories,
+            element: <InventoriesPage />,
           },
           {
             path: PATHS.orders,

@@ -4,6 +4,7 @@ const PATHS = {
   products: 'products',
   categories: 'categories',
   units: 'units',
+  inventories: 'inventories',
   orders: 'orders',
   users: 'users',
   notfound: '*',

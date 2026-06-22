@@ -8,6 +8,7 @@ export interface UserOrderItemResponse {
 
 export interface UserOrderResponse {
   order_id: string
+  order_no: string | null
   items: UserOrderItemResponse[]
 }
 
@@ -17,6 +18,7 @@ export interface UserResponse {
   user_name: string
   role_code: RoleCode
   status_code: StatusCode
+  email_verified_at: string | null
   orders: UserOrderResponse[]
   created_at: string
   updated_at: string

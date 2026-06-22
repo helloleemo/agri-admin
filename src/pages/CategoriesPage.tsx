@@ -1,8 +1,5 @@
-import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import EditRoundedIcon from '@mui/icons-material/EditRounded'
-import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded'
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -17,10 +14,11 @@ import {
   IconButton,
   Paper,
   Stack,
+Typography,
   TextField,
-  Typography,
 } from '@mui/material'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
+import { DeleteConfirmDialog } from '@/components/dialogs'
 import {
   categoriesService,
   productService,
@@ -29,6 +27,7 @@ import {
   type CategoryUpdatePayload,
   type ProductResponse,
 } from '@/api'
+import PageToolbar from '@/components/layout/PageToolbar'
 
 const formatDateTime = (value: string) => {
   const date = new Date(value)
@@ -66,6 +65,7 @@ const CategoriesPage = () => {
         categoriesService.getList({ skip: 0, limit: 100 }),
         productService.getList({ skip: 0, limit: 100 }),
       ])
+      console.log('Fetched categories:', categoryData)
       setCategories(categoryData)
       setProducts(productData)
     } catch (err) {
@@ -230,40 +230,16 @@ const CategoriesPage = () => {
 
   return (
     <Paper sx={{ p: 2.4 }}>
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1.5}
-        sx={{ mb: 2.4, justifyContent: 'space-between', alignItems: { xs: 'stretch', md: 'center' } }}
-      >
-        <Box>
-          <Typography variant="h5" sx={{ mb: 0.6 }}>
-            分類管理
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            維護商品分類資料
-          </Typography>
-        </Box>
-
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
-          <TextField
-            size="small"
-            placeholder="搜尋分類名稱"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            slotProps={{
-              input: {
-                startAdornment: <SearchRoundedIcon fontSize="small" />,
-              },
-            }}
-          />
-          <Button variant="outlined" startIcon={<AddRoundedIcon />} onClick={openCreateDialog}>
-            新增分類
-          </Button>
-          <Button variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={() => void fetchCategories()}>
-            重新整理
-          </Button>
-        </Stack>
-      </Stack>
+      <PageToolbar
+        title="分類管理"
+        description="維護商品分類資料"
+        keyword={keyword}
+        searchPlaceholder="搜尋分類名稱"
+        onKeywordChange={setKeyword}
+        addLabel="新增分類"
+        onAdd={openCreateDialog}
+        onRefresh={() => void fetchCategories()}
+      />
 
       {pageError ? (
         <Alert severity="error" sx={{ mb: 1.5 }}>
@@ -365,25 +341,15 @@ const CategoriesPage = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
-        <DialogTitle>刪除分類</DialogTitle>
-        <DialogContent dividers>
-          <Typography>
-            確定要刪除「{deleteTarget?.name || ''}」嗎？這個操作無法復原。
-          </Typography>
-          {actionError ? (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {actionError}
-            </Alert>
-          ) : null}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)}>取消</Button>
-          <Button color="error" variant="contained" onClick={() => void handleDelete()} disabled={actionLoading}>
-            {actionLoading ? '刪除中...' : '刪除'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <DeleteConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="刪除分類"
+        targetName={deleteTarget?.name || ''}
+        error={actionError}
+        loading={actionLoading}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => void handleDelete()}
+      />
     </Paper>
   )
 }
