@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createHashRouter, Navigate } from 'react-router-dom'
 import PATHS from '@/routes/paths'
 import AdminLayout from '@/components/layout/AdminLayout'
 import RequireAuth from '@/components/auth/RequireAuth'
@@ -12,7 +12,7 @@ import UsersPage from '@/pages/UsersPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import LoginPage from '@/pages/LoginPage'
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: PATHS.root,
     element: <Navigate to="/login" replace />,
