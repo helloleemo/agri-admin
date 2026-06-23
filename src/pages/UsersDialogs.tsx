@@ -33,7 +33,6 @@ type UserFormDialogProps = {
   verificationLoading: boolean
   formState: UserFormState
   selectedUserVerified: boolean
-  sendVerificationOnCreate: boolean
   markVerifiedOnCreate: boolean
   onClose: () => void
   onSubmit: () => void
@@ -42,7 +41,6 @@ type UserFormDialogProps = {
   onPasswordChange: (value: string) => void
   onRoleChange: (value: RoleCode) => void
   onToggleMarkVerifiedOnCreate: (checked: boolean) => void
-  onToggleSendVerificationOnCreate: (checked: boolean) => void
   onAdminVerify: () => void
   onResendVerification: () => void
 }
@@ -55,7 +53,6 @@ export const UserFormDialog = ({
   verificationLoading,
   formState,
   selectedUserVerified,
-  sendVerificationOnCreate,
   markVerifiedOnCreate,
   onClose,
   onSubmit,
@@ -64,7 +61,6 @@ export const UserFormDialog = ({
   onPasswordChange,
   onRoleChange,
   onToggleMarkVerifiedOnCreate,
-  onToggleSendVerificationOnCreate,
   onAdminVerify,
   onResendVerification,
 }: UserFormDialogProps) => {
@@ -108,16 +104,9 @@ export const UserFormDialog = ({
                 }
                 label="直接驗證（無需寄驗證信）"
               />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={sendVerificationOnCreate}
-                    disabled={markVerifiedOnCreate}
-                    onChange={(event) => onToggleSendVerificationOnCreate(event.target.checked)}
-                  />
-                }
-                label="建立後寄送驗證信"
-              />
+              <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
+                未勾選時，系統會在建立帳號後自動寄出驗證信。
+              </Typography>
             </Stack>
           ) : null}
 
