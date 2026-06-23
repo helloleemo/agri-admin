@@ -637,18 +637,48 @@ const OrdersPage = () => {
               value={adminNote}
               onChange={(event) => setAdminNote(event.target.value)}
             />
-
+            <Typography variant="body2" color="text.secondary">
+              訂單項目調整（僅可編輯數量）
+            </Typography>
+            <Stack spacing={1.2}>
+              {editingItems.map((item, index) => (
+                <Paper key={`${item.product_id}-${index}`} variant="outlined" sx={{ p: 1.4 }}>
+                  <Stack spacing={1.1}>
+                    <Typography sx={{ fontWeight: 700 }}>
+                      {item.product_name || item.product_id}
+                    </Typography>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
+                      <TextField
+                        label="單位"
+                        fullWidth
+                        value={item.unit}
+                        disabled
+                      />
+                      <TextField
+                        label="數量"
+                        type="number"
+                        fullWidth
+                        value={item.quantity}
+                        onChange={(event) => handleItemChange(index, 'quantity', event.target.value)}
+                        slotProps={{ htmlInput: { min: 1, step: 1 } }}
+                      />
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
             <Typography variant="subtitle2" sx={{ pt: 1 }}>
               訂單金額與項目調整（管理員）
             </Typography>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
               <TextField
-                label="小計"
+                label="商品小計"
                 type="number"
                 fullWidth
                 value={editingSubtotal}
-                slotProps={{ htmlInput: { readOnly: true } }}
+                disabled
+                slotProps={{ input: { readOnly: true }, htmlInput: { readOnly: true } }}
                 helperText="依訂單品項與數量自動重算"
               />
               <TextField
@@ -683,7 +713,8 @@ const OrdersPage = () => {
               type="number"
               fullWidth
               value={editingTotal}
-              slotProps={{ htmlInput: { readOnly: true } }}
+              disabled
+              slotProps={{ input: { readOnly: true }, htmlInput: { readOnly: true } }}
               helperText="依 小計 - 折扣 + 運費 + 人工調整金額 自動計算"
             />
 
@@ -691,36 +722,7 @@ const OrdersPage = () => {
               每筆品項單價以訂單當前商品規格價格計算，小計與總計不可直接修改。
             </Typography>
 
-            <Typography variant="body2" color="text.secondary">
-              訂單項目調整（僅可編輯數量）
-            </Typography>
-            <Stack spacing={1.2}>
-              {editingItems.map((item, index) => (
-                <Paper key={`${item.product_id}-${index}`} variant="outlined" sx={{ p: 1.4 }}>
-                  <Stack spacing={1.1}>
-                    <Typography sx={{ fontWeight: 700 }}>
-                      {item.product_name || item.product_id}
-                    </Typography>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
-                      <TextField
-                        label="單位"
-                        fullWidth
-                        value={item.unit}
-                        disabled
-                      />
-                      <TextField
-                        label="數量"
-                        type="number"
-                        fullWidth
-                        value={item.quantity}
-                        onChange={(event) => handleItemChange(index, 'quantity', event.target.value)}
-                        slotProps={{ htmlInput: { min: 1, step: 1 } }}
-                      />
-                    </Stack>
-                  </Stack>
-                </Paper>
-              ))}
-            </Stack>
+
 
             {actionError ? <Alert severity="error">{actionError}</Alert> : null}
           </Stack>
