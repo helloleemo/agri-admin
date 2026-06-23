@@ -42,4 +42,8 @@ export const API_ENDPOINT = {
   IMAGES_BATCH: '/images/batch',
   IMAGES_PRODUCT_ID: (productId: string) => `/images/${productId}`,
   IMAGES_ID: (imageId: string) => `/images/${imageId}`,
+
+  // site contents
+  SITE_CONTENTS_BY_PAGE: (pageKey: string) => `/site-contents/${pageKey}`,
+  SITE_CONTENTS_ASSETS: (pageKey: string) => `/site-contents/${pageKey}/assets`,
 }

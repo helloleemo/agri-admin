@@ -8,6 +8,7 @@ export { unitsService } from './units'
 export { inventoriesService } from './inventories'
 export { imagesService } from './images'
 export { couponsService } from './coupons'
+export { siteContentService } from './site-content'
 
 export { API_ENDPOINT } from './base/apiEndpoint'
 export { setApiErrorHandler } from './base/apiMethods'
@@ -44,4 +45,5 @@ export type {
 } from './types/inventory'
 export type { ImageResponse, CreateImagePayload, CreateImageBatchPayload, ImageUpdatePayload } from './types/image'
 export type { CouponResponse, CouponCreatePayload, CouponUpdatePayload } from './types/coupon'
+export type { HomePageContent, SiteContentResponse, PageAssetUploadResponse } from './site-content'
 export type { StatusCode, RoleCode, PaginationParams } from './types/shared'

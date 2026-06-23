@@ -29,6 +29,10 @@ const menuList = [
     link: `/${PATHS.emailTemplates}`,
   },
   {
+    label: '首頁內容管理',
+    link: `/${PATHS.siteContent}`,
+  },
+  {
     label: '優惠券管理',
     link: `/${PATHS.coupons}`,
   },
