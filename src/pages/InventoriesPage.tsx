@@ -43,6 +43,21 @@ const InventoriesPage = () => {
   const [deltaInput, setDeltaInput] = useState('')
   const [note, setNote] = useState('')
 
+  const description = () => {
+    return (
+      <>
+      <Typography variant="body2" color="text.secondary">
+        訂單成立、確認訂單待付款、已付款備貨中、配送中，會影響「保留庫存」，直到訂單已送達或取消。
+      </Typography>      
+      <Typography variant="body2" color="text.secondary">
+          實際庫存 = 初始庫存 + 手動增減累計
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          可用庫存 = 實際庫存 - 保留庫存（可於下方查看完整調整流水）
+        </Typography>
+        </>
+    )
+  }
   const fetchData = async () => {
     try {
       setLoading(true)
@@ -302,7 +317,7 @@ const InventoriesPage = () => {
       <PageToolbar
         title="庫存調整"
         titleIcon={<InventoryRoundedIcon color="primary" />}
-        description="庫存邏輯：初始庫存 + 手動增減累計 = 實際庫存；可用庫存 = 實際庫存 - 保留庫存（可於下方查看完整調整流水）"
+        description={description()}
         keyword={keyword}
         searchPlaceholder="搜尋商品或規格"
         onKeywordChange={setKeyword}

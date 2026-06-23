@@ -19,6 +19,8 @@ import {
   type ProductCreatePayload,
   type ProductResponse,
   type ProductUpdatePayload,
+  unitsService,
+  type UnitResponse,
 } from '@/api'
 import PageToolbar from '@/components/layout/PageToolbar'
 import {
@@ -38,7 +40,7 @@ const currencyFormatter = new Intl.NumberFormat('zh-TW', {
 const statusOptions: ProductStatusOption[] = [
   { value: 1, label: '啟用', color: 'success' },
   { value: 2, label: '停用', color: 'warning' },
-  { value: 3, label: '刪除', color: 'default' },
+  // { value: 3, label: '刪除', color: 'default' },
 ]
 
 const createEmptyUnit = (): ProductUnitFormRow => ({
@@ -97,6 +99,7 @@ const buildFormState = (product: ProductResponse): ProductFormState => ({
 const ProductsPage = () => {
   const [products, setProducts] = useState<ProductResponse[]>([])
   const [categories, setCategories] = useState<CategoryResponse[]>([])
+  const [units, setUnits] = useState<UnitResponse[]>([])
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
@@ -125,13 +128,15 @@ const ProductsPage = () => {
       setLoading(true)
       setPageError('')
 
-      const [productData, categoryData] = await Promise.all([
+      const [productData, categoryData, unitData] = await Promise.all([
         productService.getList({ skip: 0, limit: 100 }),
         categoriesService.getList({ skip: 0, limit: 100 }),
+        unitsService.getList({ skip: 0, limit: 100 }),
       ])
 
       setProducts(productData)
       setCategories(categoryData)
+      setUnits(unitData)
     } catch (err) {
       setPageError(err instanceof Error ? err.message : '載入商品資料失敗')
     } finally {
@@ -148,20 +153,10 @@ const ProductsPage = () => {
   }, [])
 
   const unitOptions = useMemo(() => {
-    const units = new Map<string, string>()
-
-    products.forEach((product) => {
-      product.units.forEach((unit) => {
-        if (!units.has(unit.unit_id)) {
-          units.set(unit.unit_id, unit.unit_name || unit.unit_id.slice(0, 8))
-        }
-      })
-    })
-
-    return [...units.entries()]
-      .map(([id, label]) => ({ id, label }))
+    return units
+      .map((unit) => ({ id: unit.id, label: unit.name }))
       .sort((left, right) => left.label.localeCompare(right.label, 'zh-TW'))
-  }, [products])
+  }, [units])
 
   const filteredProducts = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase()

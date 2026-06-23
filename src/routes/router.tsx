@@ -1,16 +1,33 @@
+import { lazy, Suspense, type ReactNode } from 'react'
+import { Box, CircularProgress } from '@mui/material'
 import { createHashRouter, Navigate } from 'react-router-dom'
 import PATHS from '@/routes/paths'
 import AdminLayout from '@/components/layout/AdminLayout'
 import RequireAuth from '@/components/auth/RequireAuth'
-import DashboardPage from '@/pages/DashboardPage'
-import ProductsPage from '@/pages/ProductsPage'
-import CategoriesPage from '@/pages/CategoriesPage'
-import UnitsPage from '@/pages/UnitsPage'
-import InventoriesPage from '@/pages/InventoriesPage'
-import OrdersPage from '@/pages/OrdersPage'
-import UsersPage from '@/pages/UsersPage'
-import NotFoundPage from '@/pages/NotFoundPage'
-import LoginPage from '@/pages/LoginPage'
+
+const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
+const ProductsPage = lazy(() => import('@/pages/ProductsPage'))
+const CategoriesPage = lazy(() => import('@/pages/CategoriesPage'))
+const UnitsPage = lazy(() => import('@/pages/UnitsPage'))
+const InventoriesPage = lazy(() => import('@/pages/InventoriesPage'))
+const OrdersPage = lazy(() => import('@/pages/OrdersPage'))
+const EmailTemplatesPage = lazy(() => import('@/pages/EmailTemplatesPage'))
+const UsersPage = lazy(() => import('@/pages/UsersPage'))
+const CouponsPage = lazy(() => import('@/pages/CouponsPage'))
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
+const LoginPage = lazy(() => import('@/pages/LoginPage'))
+
+const RouteLoadingFallback = () => (
+  <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
+    <CircularProgress size={28} />
+  </Box>
+)
+
+const withSuspense = (element: ReactNode) => (
+  <Suspense fallback={<RouteLoadingFallback />}>
+    {element}
+  </Suspense>
+)
 
 const router = createHashRouter([
   {
@@ -19,7 +36,7 @@ const router = createHashRouter([
   },
   {
     path: '/login',
-    element: <LoginPage />,
+    element: withSuspense(<LoginPage />),
   },
   {
     path: PATHS.root,
@@ -30,31 +47,39 @@ const router = createHashRouter([
         children: [
           {
             path: PATHS.dashboard,
-            element: <DashboardPage />,
+            element: withSuspense(<DashboardPage />),
           },
           {
             path: PATHS.products,
-            element: <ProductsPage />,
+            element: withSuspense(<ProductsPage />),
           },
           {
             path: PATHS.categories,
-            element: <CategoriesPage />,
+            element: withSuspense(<CategoriesPage />),
           },
           {
             path: PATHS.units,
-            element: <UnitsPage />,
+            element: withSuspense(<UnitsPage />),
           },
           {
             path: PATHS.inventories,
-            element: <InventoriesPage />,
+            element: withSuspense(<InventoriesPage />),
           },
           {
             path: PATHS.orders,
-            element: <OrdersPage />,
+            element: withSuspense(<OrdersPage />),
+          },
+          {
+            path: PATHS.emailTemplates,
+            element: withSuspense(<EmailTemplatesPage />),
           },
           {
             path: PATHS.users,
-            element: <UsersPage />,
+            element: withSuspense(<UsersPage />),
+          },
+          {
+            path: PATHS.coupons,
+            element: withSuspense(<CouponsPage />),
           },
         ],
       },
@@ -62,7 +87,7 @@ const router = createHashRouter([
   },
   {
     path: PATHS.notfound,
-    element: <NotFoundPage />,
+    element: withSuspense(<NotFoundPage />),
   },
 ])
 

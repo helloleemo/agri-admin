@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 
 type PageToolbarProps = {
   title: string
-  description?: string
+  description?: string | ReactNode
   titleIcon?: ReactNode
   keyword?: string
   searchPlaceholder?: string

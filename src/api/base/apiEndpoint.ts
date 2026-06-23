@@ -6,6 +6,8 @@ export const API_ENDPOINT = {
   REGISTER: '/auth/register',
   VERIFY_EMAIL: '/auth/verify-email',
   RESEND_VERIFICATION_EMAIL: '/auth/resend-verification-email',
+  AUTH_EMAIL_TEMPLATES: '/auth/email-templates',
+  AUTH_EMAIL_TEMPLATE_BY_TYPE: (templateType: number) => `/auth/email-templates/${templateType}`,
 
   // products
   PRODUCTS: '/products',
