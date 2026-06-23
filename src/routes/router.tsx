@@ -12,6 +12,7 @@ const UnitsPage = lazy(() => import('@/pages/UnitsPage'))
 const InventoriesPage = lazy(() => import('@/pages/InventoriesPage'))
 const OrdersPage = lazy(() => import('@/pages/OrdersPage'))
 const EmailTemplatesPage = lazy(() => import('@/pages/EmailTemplatesPage'))
+const SiteContentPage = lazy(() => import('@/pages/SiteContentPage'))
 const UsersPage = lazy(() => import('@/pages/UsersPage'))
 const CouponsPage = lazy(() => import('@/pages/CouponsPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
@@ -72,6 +73,10 @@ const router = createHashRouter([
           {
             path: PATHS.emailTemplates,
             element: withSuspense(<EmailTemplatesPage />),
+          },
+          {
+            path: PATHS.siteContent,
+            element: withSuspense(<SiteContentPage />),
           },
           {
             path: PATHS.users,
