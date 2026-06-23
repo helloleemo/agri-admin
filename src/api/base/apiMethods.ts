@@ -44,9 +44,20 @@ export async function handleResponse<T>(res: Response): Promise<T> {
     }
   }
 
-  const json = payload as Partial<API_RESPONSE<T>> | null
+  const json =
+    payload !== null && typeof payload === 'object'
+      ? (payload as Partial<API_RESPONSE<T>>)
+      : null
 
   if (!res.ok) {
+    // Handle authentication failures
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('authUser')
+      window.location.href = '/#/login'
+      return undefined as T
+    }
+
     const messageFromPayload =
       typeof json?.message === 'string'
         ? json.message

@@ -5,8 +5,10 @@ import TuneRoundedIcon from '@mui/icons-material/TuneRounded'
 import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded'
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded'
 import StraightenRoundedIcon from '@mui/icons-material/StraightenRounded'
-import { Box, Divider, Stack, Typography } from '@mui/material'
-import { Outlet, useLocation, Link as RouterLink } from 'react-router-dom'
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded'
+import DiscountRoundedIcon from '@mui/icons-material/DiscountRounded'
+import { Box, Button, Divider, Stack, Typography } from '@mui/material'
+import { Outlet, useLocation, useNavigate, Link as RouterLink } from 'react-router-dom'
 import menuList from '@/settings/menu'
 
 const iconMap = {
@@ -16,11 +18,19 @@ const iconMap = {
   單位管理: <StraightenRoundedIcon fontSize="small" />,
   庫存調整: <TuneRoundedIcon fontSize="small" />,
   訂單管理: <ReceiptLongRoundedIcon fontSize="small" />,
+  優惠券管理: <DiscountRoundedIcon fontSize="small" />,
   使用者管理: <PeopleAltRoundedIcon fontSize="small" />,
 }
 
 const AdminLayout = () => {
   const location = useLocation()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('authUser')
+    navigate('/login', { replace: true })
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -37,19 +47,35 @@ const AdminLayout = () => {
       >
         <Box
           sx={{
-            position: 'absolute',
-            inset: 0,
-            background:
-              'radial-gradient(circle at 12% 18%, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 42%), radial-gradient(circle at 82% 30%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 40%)',
+            position: 'relative',
+            zIndex: 1,
+            py: { xs: 3, md: 4 },
+            px: { xs: 2, md: 4 },
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
           }}
-        />
-        <Box sx={{ position: 'relative', zIndex: 1, py: { xs: 3, md: 4 }, px: { xs: 2, md: 4 } }}>
-          <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.6 }}>
-            AGRI ADMIN
-          </Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,0.86)' }}>
-            農業電商後台管理中心
-          </Typography>
+        >
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.6 }}>
+              AGRI ADMIN
+            </Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.86)' }}>
+              農業電商後台管理中心
+            </Typography>
+          </Box>
+          <Button
+            onClick={handleLogout}
+            startIcon={<LogoutRoundedIcon />}
+            sx={{
+              color: 'common.white',
+              '&:hover': {
+                bgcolor: 'rgba(255,255,255,0.1)',
+              },
+            }}
+          >
+            登出
+          </Button>
         </Box>
       </Box>
 

@@ -26,7 +26,7 @@ import {
   Typography,
 } from '@mui/material'
 import { ordersService } from '@/api'
-import type { OrderResponse, OrderStatusResponse, OrderUpdatePayload } from '@/api'
+import type { OrderResponse, OrderUpdatePayload } from '@/api'
 import { ConfirmActionDialog, DeleteConfirmDialog } from '@/components/dialogs'
 
 type EditableOrderItem = {
@@ -64,67 +64,6 @@ const statusOptions = Object.entries(statusLabelMap).map(([value, label]) => ({
   value: Number(value),
   label,
 }))
-
-const DEFAULT_TEMPLATE_FALLBACKS: Record<
-  number,
-  {
-    customerSubject: string
-    customerBody: string
-    adminSubject: string
-    adminBody: string
-  }
-> = {
-  [ORDER_STATUS_CODE.ORDER_CREATED]: {
-    customerSubject: 'Mekarang訂購通知！訂單 {order_no} 已建立',
-    customerBody: '我們已收到您的訂單，待訂單確認後將發送繳費明細，請耐心等候。',
-    adminSubject: '[Admin] 新訂單 {order_no}',
-    adminBody: '系統收到新訂單，請確認後續處理流程。',
-  },
-  [ORDER_STATUS_CODE.ORDER_CONFIRMED_AND_PENDING_PAYMENT]: {
-    customerSubject: 'Mekarang訂購通知！訂單 {order_no} 已確認，請完成付款',
-    customerBody:
-      '您的訂單已確認，後續將依流程安排出貨。\n繳費明細會包含訂單編號、收件人、聯絡信箱與總金額。\n請於 7 天內完成付款，逾期訂單將自動取消。',
-    adminSubject: '[Admin] 訂單 {order_no} 已確認待付款',
-    adminBody: '訂單目前待付款，請視需要追蹤付款狀況。',
-  },
-  [ORDER_STATUS_CODE.PAID_AND_PREPARING]: {
-    customerSubject: '訂單 {order_no} 備貨中',
-    customerBody: '我們已收到您的付款，訂單正在備貨中，完成後會通知您出貨。',
-    adminSubject: '[Admin] 訂單 {order_no} 備貨中',
-    adminBody: '訂單已完成付款並進入備貨流程。',
-  },
-  [ORDER_STATUS_CODE.SHIPPING]: {
-    customerSubject: '訂單 {order_no} 已出貨',
-    customerBody: '您的訂單已出貨，請留意收件。',
-    adminSubject: '[Admin] 訂單 {order_no} 已出貨',
-    adminBody: '訂單已出貨，請追蹤物流與送達狀態。',
-  },
-  [ORDER_STATUS_CODE.DELIVERED]: {
-    customerSubject: '訂單 {order_no} 已送達',
-    customerBody: '您的訂單已送達，感謝您的訂購。',
-    adminSubject: '[Admin] 訂單 {order_no} 已送達',
-    adminBody: '訂單已送達，可視需要進行結案追蹤。',
-  },
-  [ORDER_STATUS_CODE.CANCELED]: {
-    customerSubject: '訂單 {order_no} 已取消',
-    customerBody: '您的訂單已取消；若這不是您預期的結果，請聯繫客服。',
-    adminSubject: '[Admin] 訂單 {order_no} 已取消',
-    adminBody: '訂單已取消，請確認是否需要後續退款或庫存調整。',
-  },
-  [ORDER_STATUS_CODE.REFUNDED]: {
-    customerSubject: '訂單 {order_no} 已退款',
-    customerBody:
-      '您的退款已處理完成，款項將依原付款方式返還，請留意帳戶入帳。',
-    adminSubject: '[Admin] 訂單 {order_no} 已退款',
-    adminBody: '訂單退款已處理，請確認退款金額與方式是否正確。',
-  },
-  [ORDER_STATUS_CODE.OTHER]: {
-    customerSubject: '訂單 {order_no} 狀態更新',
-    customerBody: '您的訂單狀態已更新，如有疑問請聯繫客服。',
-    adminSubject: '[Admin] 訂單 {order_no} 狀態更新（其他）',
-    adminBody: '訂單狀態已被標記為其他，請確認處理情況。',
-  },
-}
 
 const statusColorMap: Record<
   number,
@@ -174,17 +113,6 @@ const OrdersPage = () => {
   const [editingTotal, setEditingTotal] = useState('0')
   const [editingItems, setEditingItems] = useState<EditableOrderItem[]>([])
   const [saveLoading, setSaveLoading] = useState(false)
-  const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
-  const [templateLoading, setTemplateLoading] = useState(false)
-  const [templateSaving, setTemplateSaving] = useState(false)
-  const [templateError, setTemplateError] = useState('')
-  const [templateNotice, setTemplateNotice] = useState('')
-  const [orderStatusTemplates, setOrderStatusTemplates] = useState<OrderStatusResponse[]>([])
-  const [templateStatusCode, setTemplateStatusCode] = useState<number>(ORDER_STATUS_CODE.ORDER_CREATED)
-  const [templateCustomerSubject, setTemplateCustomerSubject] = useState('')
-  const [templateCustomerBody, setTemplateCustomerBody] = useState('')
-  const [templateAdminSubject, setTemplateAdminSubject] = useState('')
-  const [templateAdminBody, setTemplateAdminBody] = useState('')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<OrderResponse | null>(null)
 
@@ -278,41 +206,6 @@ const OrdersPage = () => {
     setEditingItems([])
     setConfirmOpen(false)
     setSaveLoading(false)
-  }
-
-  const openTemplateDialog = async () => {
-    setTemplateDialogOpen(true)
-    setTemplateLoading(true)
-    setTemplateError('')
-    setTemplateNotice('')
-    try {
-      const statuses = await ordersService.listOrderStatuses()
-      setOrderStatusTemplates(statuses)
-      const initial = statuses.find((status) => status.code === templateStatusCode) ?? statuses[0]
-      if (initial) {
-        setTemplateStatusCode(initial.code)
-        setTemplateCustomerSubject(initial.customer_email_subject_template ?? '')
-        setTemplateCustomerBody(initial.customer_email_body_template ?? '')
-        setTemplateAdminSubject(initial.admin_email_subject_template ?? '')
-        setTemplateAdminBody(initial.admin_email_body_template ?? '')
-      }
-    } catch (err) {
-      setTemplateError(err instanceof Error ? err.message : '載入 Email 範本失敗')
-    } finally {
-      setTemplateLoading(false)
-    }
-  }
-
-  const applyTemplateFromCode = (code: number) => {
-    const matched = orderStatusTemplates.find((status) => status.code === code)
-    if (!matched) {
-      return
-    }
-    setTemplateStatusCode(code)
-    setTemplateCustomerSubject(matched.customer_email_subject_template ?? '')
-    setTemplateCustomerBody(matched.customer_email_body_template ?? '')
-    setTemplateAdminSubject(matched.admin_email_subject_template ?? '')
-    setTemplateAdminBody(matched.admin_email_body_template ?? '')
   }
 
   const openViewDialog = async (orderId: string) => {
@@ -442,29 +335,6 @@ const OrdersPage = () => {
     }
   }
 
-  const handleSaveEmailTemplate = async () => {
-    try {
-      setTemplateSaving(true)
-      setTemplateError('')
-      const updated = await ordersService.updateOrderStatusEmailTemplate(templateStatusCode, {
-        customer_email_subject_template: templateCustomerSubject.trim() || null,
-        customer_email_body_template: templateCustomerBody.trim() || null,
-        admin_email_subject_template: templateAdminSubject.trim() || null,
-        admin_email_body_template: templateAdminBody.trim() || null,
-      })
-
-      setOrderStatusTemplates((prev) =>
-        prev.map((status) => (status.code === updated.code ? updated : status)),
-      )
-      setTemplateDialogOpen(false)
-      setTemplateNotice('')
-      setNotice('Email 範本已儲存')
-    } catch (err) {
-      setTemplateError(err instanceof Error ? err.message : '儲存 Email 範本失敗')
-    } finally {
-      setTemplateSaving(false)
-    }
-  }
 
   const handleDeleteOrder = async () => {    if (!deleteTarget) {
       return
@@ -598,8 +468,6 @@ const OrdersPage = () => {
   const currentStatusLabel =
     editingOrder?.order_status_name || (editingOrder ? statusLabelMap[editingOrder.order_status_code] : '')
   const nextStatusLabel = statusLabelMap[nextStatusCode] || `狀態 ${nextStatusCode}`
-  const selectedTemplateFallback =
-    DEFAULT_TEMPLATE_FALLBACKS[templateStatusCode] ?? DEFAULT_TEMPLATE_FALLBACKS[ORDER_STATUS_CODE.OTHER]
 
   return (
     <Paper sx={{ p: 2.4 }}>
@@ -637,9 +505,6 @@ const OrdersPage = () => {
             onClick={() => setRefreshVersion((prev) => prev + 1)}
           >
             重新整理
-          </Button>
-          <Button variant="outlined" size="small" onClick={() => void openTemplateDialog()}>
-            Email 範本設定
           </Button>
         </Stack>
       </Stack>
@@ -999,109 +864,6 @@ const OrdersPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={closeViewDialog} disabled={viewLoading}>關閉</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={templateDialogOpen}
-        onClose={templateSaving ? undefined : () => setTemplateDialogOpen(false)}
-        fullWidth
-        maxWidth="md"
-      >
-        <DialogTitle>訂單狀態 Email 範本設定</DialogTitle>
-        <DialogContent dividers>
-          {templateLoading ? (
-            <Stack sx={{ py: 3, alignItems: 'center' }}>
-              <CircularProgress size={28} />
-            </Stack>
-          ) : (
-            <Stack spacing={1.4} sx={{ pt: 0.5 }}>
-              {templateError ? <Alert severity="error">{templateError}</Alert> : null}
-              {templateNotice ? <Alert severity="success">{templateNotice}</Alert> : null}
-              <Alert severity="info">
-                留空時會自動套用「系統預設範本」，下方顯示的是目前狀態對應的預設主旨與內容。
-              </Alert>
-
-              <TextField
-                label="訂單狀態"
-                select
-                value={templateStatusCode}
-                onChange={(event) => applyTemplateFromCode(Number(event.target.value))}
-                fullWidth
-              >
-                {statusOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <Typography variant="body2" color="text.secondary">
-                可用變數：{'{order_no}'}, {'{status_name}'}, {'{status_code}'}, {'{customer_name}'}, {'{customer_email}'}, {'{orderer_name}'}, {'{orderer_email}'}, {'{orderer_phone}'}, {'{address}'}, {'{coupon_code}'}, {'{delivery_method_label}'}, {'{payment_method_label}'}, {'{subtotal_amount}'}, {'{discount_amount}'}, {'{shipping_fee}'}, {'{total_amount}'}, {'{bank_transfer_last5}'}, {'{items_count}'}, {'{items_summary}'}, {'{created_at}'}, {'{updated_at}'}
-              </Typography>
-
-              <TextField
-                label="顧客信件主旨"
-                fullWidth
-                value={templateCustomerSubject}
-                onChange={(event) => setTemplateCustomerSubject(event.target.value)}
-              />
-              <TextField
-                label="顧客信件內容"
-                multiline
-                minRows={5}
-                fullWidth
-                value={templateCustomerBody}
-                onChange={(event) => setTemplateCustomerBody(event.target.value)}
-              />
-              <TextField
-                label="管理員信件主旨"
-                fullWidth
-                value={templateAdminSubject}
-                onChange={(event) => setTemplateAdminSubject(event.target.value)}
-              />
-              <TextField
-                label="管理員信件內容"
-                multiline
-                minRows={5}
-                fullWidth
-                value={templateAdminBody}
-                onChange={(event) => setTemplateAdminBody(event.target.value)}
-              />
-
-              <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50' }}>
-                <Typography variant="subtitle2" sx={{ mb: 0.6 }}>
-                  系統預設（{statusLabelMap[templateStatusCode] || `狀態 ${templateStatusCode}`}）
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  顧客主旨
-                </Typography>
-                <Typography sx={{ mb: 1.2 }}>{selectedTemplateFallback.customerSubject}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  顧客內容
-                </Typography>
-                <Typography sx={{ mb: 1.2, whiteSpace: 'pre-wrap' }}>
-                  {selectedTemplateFallback.customerBody}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  管理員主旨
-                </Typography>
-                <Typography sx={{ mb: 1.2 }}>{selectedTemplateFallback.adminSubject}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  管理員內容
-                </Typography>
-                <Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedTemplateFallback.adminBody}</Typography>
-              </Paper>
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setTemplateDialogOpen(false)} disabled={templateSaving}>
-            關閉
-          </Button>
-          <Button onClick={() => void handleSaveEmailTemplate()} variant="contained" disabled={templateSaving || templateLoading}>
-            {templateSaving ? '儲存中...' : '儲存範本'}
-          </Button>
         </DialogActions>
       </Dialog>
 

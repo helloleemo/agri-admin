@@ -3,7 +3,6 @@ import {
   Avatar,
   Box,
   Button,
-  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
@@ -11,6 +10,7 @@ import {
   FormControlLabel,
   MenuItem,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material'
@@ -98,25 +98,25 @@ export const UserFormDialog = ({
           </TextField>
 
           {mode === 'create' ? (
-            <Stack spacing={0.4}>
+            <Stack spacing={0.5}>
               <FormControlLabel
                 control={
-                  <Checkbox
+                  <Switch
                     checked={markVerifiedOnCreate}
                     onChange={(event) => onToggleMarkVerifiedOnCreate(event.target.checked)}
                   />
                 }
-                label="管理員直接驗證（不寄信）"
+                label="直接驗證（無需寄驗證信）"
               />
               <FormControlLabel
                 control={
-                  <Checkbox
+                  <Switch
                     checked={sendVerificationOnCreate}
-                    onChange={(event) => onToggleSendVerificationOnCreate(event.target.checked)}
                     disabled={markVerifiedOnCreate}
+                    onChange={(event) => onToggleSendVerificationOnCreate(event.target.checked)}
                   />
                 }
-                label="建立後立即寄送 Email 驗證信"
+                label="建立後寄送驗證信"
               />
             </Stack>
           ) : null}

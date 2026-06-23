@@ -6,16 +6,16 @@ const menuList = [
     link: `/${PATHS.dashboard}`,
   },
   {
-    label: '商品管理',
-    link: `/${PATHS.products}`,
+    label: '單位管理',
+    link: `/${PATHS.units}`,
   },
   {
     label: '分類管理',
     link: `/${PATHS.categories}`,
   },
   {
-    label: '單位管理',
-    link: `/${PATHS.units}`,
+    label: '商品管理',
+    link: `/${PATHS.products}`,
   },
   {
     label: '庫存調整',
@@ -24,6 +24,14 @@ const menuList = [
   {
     label: '訂單管理',
     link: `/${PATHS.orders}`,
+  },
+  {
+    label: 'Email範本設定',
+    link: `/${PATHS.emailTemplates}`,
+  },
+  {
+    label: '優惠券管理',
+    link: `/${PATHS.coupons}`,
   },
   {
     label: '使用者管理',

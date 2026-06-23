@@ -6,7 +6,9 @@ const PATHS = {
   units: 'units',
   inventories: 'inventories',
   orders: 'orders',
+  emailTemplates: 'email-templates',
   users: 'users',
+  coupons: 'coupons',
   notfound: '*',
 } as const
 
