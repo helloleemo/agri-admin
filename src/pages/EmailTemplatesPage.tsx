@@ -1,7 +1,11 @@
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded'
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded'
 import { useEffect, useMemo, useState } from 'react'
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -318,29 +322,33 @@ const EmailTemplatesPage = () => {
                   onChange={(event) => setTemplateAdminBody(event.target.value)}
                 />
 
-                <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50' }}>
-                  <Typography variant="subtitle2" sx={{ mb: 0.6 }}>
-                    系統預設（{statusLabelMap[templateStatusCode] || `狀態 ${templateStatusCode}`}）
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    顧客主旨
-                  </Typography>
-                  <Typography sx={{ mb: 1.2 }}>{selectedOrderFallback.customerSubject}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    顧客內容
-                  </Typography>
-                  <Typography sx={{ mb: 1.2, whiteSpace: 'pre-wrap' }}>
-                    {selectedOrderFallback.customerBody}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    管理員主旨
-                  </Typography>
-                  <Typography sx={{ mb: 1.2 }}>{selectedOrderFallback.adminSubject}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    管理員內容
-                  </Typography>
-                  <Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedOrderFallback.adminBody}</Typography>
-                </Paper>
+                <Accordion disableGutters sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                    <Typography variant="subtitle2">
+                      系統預設（{statusLabelMap[templateStatusCode] || `狀態 ${templateStatusCode}`}）
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ bgcolor: 'grey.50' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      顧客主旨
+                    </Typography>
+                    <Typography sx={{ mb: 1.2 }}>{selectedOrderFallback.customerSubject}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      顧客內容
+                    </Typography>
+                    <Typography sx={{ mb: 1.2, whiteSpace: 'pre-wrap' }}>
+                      {selectedOrderFallback.customerBody}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      管理員主旨
+                    </Typography>
+                    <Typography sx={{ mb: 1.2 }}>{selectedOrderFallback.adminSubject}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      管理員內容
+                    </Typography>
+                    <Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedOrderFallback.adminBody}</Typography>
+                  </AccordionDetails>
+                </Accordion>
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <Button
@@ -377,19 +385,21 @@ const EmailTemplatesPage = () => {
                   onChange={(event) => setRegistrationBody(event.target.value)}
                 />
 
-                <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50' }}>
-                  <Typography variant="subtitle2" sx={{ mb: 0.6 }}>
-                    系統預設（註冊驗證信）
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    主旨
-                  </Typography>
-                  <Typography sx={{ mb: 1.2 }}>{REGISTRATION_FALLBACK.subject}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    內容
-                  </Typography>
-                  <Typography sx={{ whiteSpace: 'pre-wrap' }}>{REGISTRATION_FALLBACK.body}</Typography>
-                </Paper>
+                <Accordion disableGutters sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                    <Typography variant="subtitle2">系統預設（註冊驗證信）</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ bgcolor: 'grey.50' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      主旨
+                    </Typography>
+                    <Typography sx={{ mb: 1.2 }}>{REGISTRATION_FALLBACK.subject}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      內容
+                    </Typography>
+                    <Typography sx={{ whiteSpace: 'pre-wrap' }}>{REGISTRATION_FALLBACK.body}</Typography>
+                  </AccordionDetails>
+                </Accordion>
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <Button

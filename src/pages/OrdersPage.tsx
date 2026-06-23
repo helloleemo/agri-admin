@@ -34,6 +34,7 @@ type EditableOrderItem = {
   product_id: string
   unit_id: string | null
   unit: string
+  unit_price: number
   quantity: string
   product_name: string | null
 }
@@ -107,10 +108,9 @@ const OrdersPage = () => {
   const [viewError, setViewError] = useState('')
   const [adminNote, setAdminNote] = useState('')
   const [nextStatusCode, setNextStatusCode] = useState<number>(ORDER_STATUS_CODE.ORDER_CREATED)
-  const [editingSubtotal, setEditingSubtotal] = useState('0')
   const [editingDiscount, setEditingDiscount] = useState('0')
   const [editingShippingFee, setEditingShippingFee] = useState('0')
-  const [editingTotal, setEditingTotal] = useState('0')
+  const [editingManualAdjustment, setEditingManualAdjustment] = useState('0')
   const [editingItems, setEditingItems] = useState<EditableOrderItem[]>([])
   const [saveLoading, setSaveLoading] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -181,16 +181,16 @@ const OrdersPage = () => {
   const openEditDialog = (order: OrderResponse) => {
     setEditingOrder(order)
     setNextStatusCode(order.order_status_code)
-    setEditingSubtotal(String(order.subtotal_amount))
     setEditingDiscount(String(order.discount_amount))
     setEditingShippingFee(String(order.shipping_fee ?? 0))
-    setEditingTotal(String(order.total_amount))
+    setEditingManualAdjustment(String(order.manual_adjustment_amount ?? 0))
     setEditingItems(
       order.items.map((item) => ({
         id: item.id,
         product_id: item.product_id,
         unit_id: item.unit_id ?? null,
         unit: item.unit ?? '',
+        unit_price: item.unit_price ?? 0,
         quantity: String(item.quantity),
         product_name: item.product_name ?? null,
       })),
@@ -203,6 +203,7 @@ const OrdersPage = () => {
     setEditingOrder(null)
     setActionError('')
     setAdminNote('')
+    setEditingManualAdjustment('0')
     setEditingItems([])
     setConfirmOpen(false)
     setSaveLoading(false)
@@ -258,6 +259,44 @@ const OrdersPage = () => {
     return parsed
   }
 
+  const parseInteger = (value: string, label: string): number => {
+    const normalized = value.trim()
+    if (!normalized) {
+      throw new Error(`${label} 不能為空`)
+    }
+
+    const parsed = Number(normalized)
+    if (!Number.isInteger(parsed)) {
+      throw new Error(`${label} 需為整數`)
+    }
+
+    return parsed
+  }
+
+  const editingSubtotal = useMemo(
+    () =>
+      editingItems.reduce((sum, item) => {
+        const quantity = Number(item.quantity)
+        if (!Number.isInteger(quantity) || quantity < 1) {
+          return sum
+        }
+        return sum + item.unit_price * quantity
+      }, 0),
+    [editingItems],
+  )
+
+  const editingTotal = useMemo(() => {
+    const discount = Number(editingDiscount)
+    const shippingFee = Number(editingShippingFee)
+    const manualAdjustment = Number(editingManualAdjustment)
+
+    if (!Number.isFinite(discount) || !Number.isFinite(shippingFee) || !Number.isFinite(manualAdjustment)) {
+      return 0
+    }
+
+    return Math.max(0, editingSubtotal - discount + shippingFee + manualAdjustment)
+  }, [editingDiscount, editingManualAdjustment, editingShippingFee, editingSubtotal])
+
   const handleItemChange = (index: number, key: 'quantity', value: string) => {
     setEditingItems((prev) =>
       prev.map((item, itemIndex) => {
@@ -278,10 +317,9 @@ const OrdersPage = () => {
       setSaveLoading(true)
       setActionError('')
 
-      const subtotalAmount = parseNonNegativeInt(editingSubtotal, '小計')
       const discountAmount = parseNonNegativeInt(editingDiscount, '折扣')
       const shippingFee = parseNonNegativeInt(editingShippingFee, '運費')
-      const totalAmount = parseNonNegativeInt(editingTotal, '總計')
+      const manualAdjustmentAmount = parseInteger(editingManualAdjustment, '人工調整金額')
 
       if (!editingItems.length) {
         throw new Error('訂單至少需要 1 筆品項')
@@ -309,10 +347,9 @@ const OrdersPage = () => {
 
       const payload: OrderUpdatePayload = {
         order_status_code: nextStatusCode,
-        subtotal_amount: subtotalAmount,
         discount_amount: discountAmount,
         shipping_fee: shippingFee,
-        total_amount: totalAmount,
+        manual_adjustment_amount: manualAdjustmentAmount,
         items,
       }
 
@@ -611,7 +648,8 @@ const OrdersPage = () => {
                 type="number"
                 fullWidth
                 value={editingSubtotal}
-                onChange={(event) => setEditingSubtotal(event.target.value)}
+                slotProps={{ htmlInput: { readOnly: true } }}
+                helperText="依訂單品項與數量自動重算"
               />
               <TextField
                 label="折扣"
@@ -631,13 +669,27 @@ const OrdersPage = () => {
                 onChange={(event) => setEditingShippingFee(event.target.value)}
               />
               <TextField
-                label="總計"
+                label="人工調整金額"
                 type="number"
                 fullWidth
-                value={editingTotal}
-                onChange={(event) => setEditingTotal(event.target.value)}
+                value={editingManualAdjustment}
+                onChange={(event) => setEditingManualAdjustment(event.target.value)}
+                helperText="可輸入正數或負數，例如補差額或折讓"
               />
             </Stack>
+
+            <TextField
+              label="總計"
+              type="number"
+              fullWidth
+              value={editingTotal}
+              slotProps={{ htmlInput: { readOnly: true } }}
+              helperText="依 小計 - 折扣 + 運費 + 人工調整金額 自動計算"
+            />
+
+            <Typography variant="body2" color="text.secondary">
+              每筆品項單價以訂單當前商品規格價格計算，小計與總計不可直接修改。
+            </Typography>
 
             <Typography variant="body2" color="text.secondary">
               訂單項目調整（僅可編輯數量）
@@ -810,6 +862,12 @@ const OrdersPage = () => {
                     運費
                   </Typography>
                   <Typography>{currencyFormatter.format(viewingOrder.shipping_fee)}</Typography>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    人工調整金額
+                  </Typography>
+                  <Typography>{currencyFormatter.format(viewingOrder.manual_adjustment_amount ?? 0)}</Typography>
                 </Box>
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="caption" color="text.secondary">

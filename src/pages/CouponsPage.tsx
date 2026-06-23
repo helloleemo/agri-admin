@@ -233,7 +233,7 @@ const CouponsPage = () => {
       width: 100,
       sortable: false,
       renderCell: ({ row }) => (
-        <Stack direction="row" spacing={0.5}>
+        <Stack direction="row" spacing={0.5} sx={{ height: '100%', alignItems: 'center' }}>
           <IconButton
             size="small"
             onClick={() => handleOpenForm(row)}
