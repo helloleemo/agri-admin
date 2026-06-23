@@ -1,8 +1,12 @@
 import ImageRoundedIcon from '@mui/icons-material/ImageRounded'
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded'
 import UploadRoundedIcon from '@mui/icons-material/UploadRounded'
-import { useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -60,6 +64,19 @@ const defaultHomeContent: HomePageContent = {
   orders_query: {
     description: '輸入你的訂單編號與 Email，立即查看付款狀態、配送進度與收件資訊。若你剛完成下單，也可以在這裡快速追蹤最新處理狀態。',
     image_url: 'https://images.unsplash.com/photo-1471194402529-8e0f5a675de6?auto=format&fit=crop&w=1800&q=80',
+  },
+  product_detail: {
+    intro: {
+      title: '農產品標題',
+      description: '嚴選合作農場與當季採收時程，透過穩定冷鏈與分級包裝管理，把自然甜香維持在最好的狀態。讓每次下單都能收到一致品質。',
+    },
+    bottom_cta: {
+      title: '標題標題',
+      description: '清洗去絨後，父母半日前即訂購桃禮，面語言用毫果口入半通古就購票方字，再次用果包瓜此處貨決？已回穿，林有花藝。兒升光了單馬中真河以的門卡上連七日？又分者。',
+      button_text: '立即預訂',
+      button_link: '/mekarang/products',
+      image_url: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=1800&q=80',
+    },
   },
   footer: {
     title: '與我們保持聯繫',
@@ -127,6 +144,23 @@ const ensureHomeContent = (input: unknown): HomePageContent => {
       description: raw.orders_query?.description ?? fallback.orders_query.description,
       image_url: raw.orders_query?.image_url ?? fallback.orders_query.image_url,
     },
+    product_detail: {
+      intro: {
+        title: raw.product_detail?.intro?.title ?? fallback.product_detail.intro.title,
+        description: raw.product_detail?.intro?.description ?? fallback.product_detail.intro.description,
+      },
+      bottom_cta: {
+        title: raw.product_detail?.bottom_cta?.title ?? fallback.product_detail.bottom_cta.title,
+        description:
+          raw.product_detail?.bottom_cta?.description ?? fallback.product_detail.bottom_cta.description,
+        button_text:
+          raw.product_detail?.bottom_cta?.button_text ?? fallback.product_detail.bottom_cta.button_text,
+        button_link:
+          raw.product_detail?.bottom_cta?.button_link ?? fallback.product_detail.bottom_cta.button_link,
+        image_url:
+          raw.product_detail?.bottom_cta?.image_url ?? fallback.product_detail.bottom_cta.image_url,
+      },
+    },
     footer: {
       title: raw.footer?.title ?? fallback.footer.title,
       button_text: raw.footer?.button_text ?? fallback.footer.button_text,
@@ -138,6 +172,33 @@ const ensureHomeContent = (input: unknown): HomePageContent => {
       },
     },
   }
+}
+
+type CollapsibleSectionProps = {
+  title: string
+  children: ReactNode
+  defaultExpanded?: boolean
+}
+
+const CollapsibleSection = ({ title, children, defaultExpanded = true }: CollapsibleSectionProps) => {
+  return (
+    <Accordion
+      defaultExpanded={defaultExpanded}
+      disableGutters
+      variant="outlined"
+      sx={{
+        borderRadius: 1,
+        '&:before': { display: 'none' },
+      }}
+    >
+      <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+        <Typography variant="h6">{title}</Typography>
+      </AccordionSummary>
+      <AccordionDetails sx={{ pt: 0 }}>
+        {children}
+      </AccordionDetails>
+    </Accordion>
+  )
 }
 
 const SiteContentPage = () => {
@@ -203,7 +264,7 @@ const SiteContentPage = () => {
     <Stack spacing={2}>
       <PageToolbar
         title="首頁內容管理"
-        description="管理主圖、說明圖、按鈕文案與 footer 文字。"
+        description="管理首頁、訂單查詢與商品詳情頁底部文案。"
         titleIcon={<ImageRoundedIcon color="primary" />}
         onRefresh={() => void loadContent()}
         extraActions={(
@@ -233,9 +294,8 @@ const SiteContentPage = () => {
 
       {!loading ? (
         <Stack spacing={2}>
-          <Paper variant="outlined" sx={{ p: 2 }}>
+          <CollapsibleSection title="主視覺區塊">
             <Stack spacing={1.5}>
-              <Typography variant="h6">主視覺區塊</Typography>
               <TextField
                 label="標題"
                 value={content.hero.title}
@@ -276,6 +336,10 @@ const SiteContentPage = () => {
                 onChange={(event) => setContent((prev) => ({ ...prev, hero: { ...prev.hero, image_url: event.target.value } }))}
                 fullWidth
               />
+              <Typography variant="body2" color="text.secondary">
+                可上傳圖片或直接輸入圖片 URL，完成後記得按右上角的儲存按鈕才會生效。
+              </Typography>
+
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>
                 <Button component="label" variant="outlined" startIcon={<UploadRoundedIcon />}>
                   {uploadingKey === 'hero-image' ? '上傳中...' : '上傳主圖'}
@@ -300,13 +364,13 @@ const SiteContentPage = () => {
                   alt="hero"
                   sx={{ width: { xs: '100%', md: 280 }, height: 120, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}
                 />
+                
               </Stack>
             </Stack>
-          </Paper>
+          </CollapsibleSection>
 
-          <Paper variant="outlined" sx={{ p: 2 }}>
+          <CollapsibleSection title="說明圖區塊">
             <Stack spacing={1.5}>
-              <Typography variant="h6">說明圖區塊</Typography>
               {content.showcase_blocks.map((block, index) => {
                 const imageKey = `showcase-${index + 1}-image`
                 return (
@@ -350,6 +414,9 @@ const SiteContentPage = () => {
                           minRows={2}
                           fullWidth
                         />
+                                      <Typography variant="body2" color="text.secondary">
+                可上傳圖片或直接輸入圖片 URL，完成後記得按右上角的儲存按鈕才會生效。
+              </Typography>
                       </Grid>
                       <Grid size={12}>
                         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>
@@ -386,11 +453,13 @@ const SiteContentPage = () => {
                 )
               })}
             </Stack>
-          </Paper>
+          </CollapsibleSection>
 
-          <Paper variant="outlined" sx={{ p: 2 }}>
+          <CollapsibleSection title="流程與底部 CTA">
             <Stack spacing={1.5}>
-              <Typography variant="h6">流程與底部 CTA</Typography>
+              <Typography variant="body2" color="text.secondary">
+                流程會同時用在 `/mekarang/products/[id]` 。
+              </Typography>
               <TextField
                 label="流程區塊標題"
                 value={content.flow.title}
@@ -472,6 +541,9 @@ const SiteContentPage = () => {
                 }
                 fullWidth
               />
+                            <Typography variant="body2" color="text.secondary">
+                可上傳圖片或直接輸入圖片 URL，完成後記得按右上角的儲存按鈕才會生效。
+              </Typography>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>
                 <Button component="label" variant="outlined" startIcon={<UploadRoundedIcon />}>
                   {uploadingKey === 'bottom-cta-image' ? '上傳中...' : '上傳底部 CTA 圖片'}
@@ -498,11 +570,10 @@ const SiteContentPage = () => {
                 />
               </Stack>
             </Stack>
-          </Paper>
+          </CollapsibleSection>
 
-          <Paper variant="outlined" sx={{ p: 2 }}>
+          <CollapsibleSection title="產品/訂購流程頁頂部圖">
             <Stack spacing={1.5}>
-              <Typography variant="h6">產品/訂購流程頁頂部圖</Typography>
               <Typography variant="body2" color="text.secondary">
                 這張圖會同時用在 `/mekarang/products` 與訂購流程相關頁面的頂部 banner。
               </Typography>
@@ -517,6 +588,9 @@ const SiteContentPage = () => {
                 }
                 fullWidth
               />
+                            <Typography variant="body2" color="text.secondary">
+                可上傳圖片或直接輸入圖片 URL，完成後記得按右上角的儲存按鈕才會生效。
+              </Typography>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>
                 <Button component="label" variant="outlined" startIcon={<UploadRoundedIcon />}>
                   {uploadingKey === 'mekarang-banner-image' ? '上傳中...' : '上傳頂部 banner 圖片'}
@@ -546,11 +620,10 @@ const SiteContentPage = () => {
                 />
               </Stack>
             </Stack>
-          </Paper>
+          </CollapsibleSection>
 
-          <Paper variant="outlined" sx={{ p: 2 }}>
+          <CollapsibleSection title="訂單查詢頁內容">
             <Stack spacing={1.5}>
-              <Typography variant="h6">訂單查詢頁內容</Typography>
               <TextField
                 label="查詢頁說明文字"
                 value={content.orders_query.description}
@@ -604,11 +677,156 @@ const SiteContentPage = () => {
                 />
               </Stack>
             </Stack>
-          </Paper>
+          </CollapsibleSection>
 
-          <Paper variant="outlined" sx={{ p: 2 }}>
+          <CollapsibleSection title="商品詳情頁底部內容">
             <Stack spacing={1.5}>
-              <Typography variant="h6">Footer 文案</Typography>
+              <TextField
+                label="底部介紹區塊標題"
+                value={content.product_detail.intro.title}
+                onChange={(event) =>
+                  setContent((prev) => ({
+                    ...prev,
+                    product_detail: {
+                      ...prev.product_detail,
+                      intro: { ...prev.product_detail.intro, title: event.target.value },
+                    },
+                  }))
+                }
+                fullWidth
+              />
+              <TextField
+                label="底部介紹區塊說明"
+                value={content.product_detail.intro.description}
+                onChange={(event) =>
+                  setContent((prev) => ({
+                    ...prev,
+                    product_detail: {
+                      ...prev.product_detail,
+                      intro: { ...prev.product_detail.intro, description: event.target.value },
+                    },
+                  }))
+                }
+                multiline
+                minRows={3}
+                fullWidth
+              />
+
+              <Divider />
+
+              <TextField
+                label="最底部 CTA 標題"
+                value={content.product_detail.bottom_cta.title}
+                onChange={(event) =>
+                  setContent((prev) => ({
+                    ...prev,
+                    product_detail: {
+                      ...prev.product_detail,
+                      bottom_cta: { ...prev.product_detail.bottom_cta, title: event.target.value },
+                    },
+                  }))
+                }
+                fullWidth
+              />
+              <TextField
+                label="最底部 CTA 說明"
+                value={content.product_detail.bottom_cta.description}
+                onChange={(event) =>
+                  setContent((prev) => ({
+                    ...prev,
+                    product_detail: {
+                      ...prev.product_detail,
+                      bottom_cta: { ...prev.product_detail.bottom_cta, description: event.target.value },
+                    },
+                  }))
+                }
+                multiline
+                minRows={3}
+                fullWidth
+              />
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+                <TextField
+                  label="最底部 CTA 按鈕文字"
+                  value={content.product_detail.bottom_cta.button_text}
+                  onChange={(event) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      product_detail: {
+                        ...prev.product_detail,
+                        bottom_cta: { ...prev.product_detail.bottom_cta, button_text: event.target.value },
+                      },
+                    }))
+                  }
+                  fullWidth
+                />
+                <TextField
+                  label="最底部 CTA 按鈕連結"
+                  value={content.product_detail.bottom_cta.button_link}
+                  onChange={(event) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      product_detail: {
+                        ...prev.product_detail,
+                        bottom_cta: { ...prev.product_detail.bottom_cta, button_link: event.target.value },
+                      },
+                    }))
+                  }
+                  fullWidth
+                />
+              </Stack>
+              <TextField
+                label="最底部 CTA 背景圖 URL"
+                value={content.product_detail.bottom_cta.image_url}
+                onChange={(event) =>
+                  setContent((prev) => ({
+                    ...prev,
+                    product_detail: {
+                      ...prev.product_detail,
+                      bottom_cta: { ...prev.product_detail.bottom_cta, image_url: event.target.value },
+                    },
+                  }))
+                }
+                fullWidth
+              />
+                            <Typography variant="body2" color="text.secondary">
+                可上傳圖片或直接輸入圖片 URL，完成後記得按右上角的儲存按鈕才會生效。
+              </Typography>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>
+                <Button component="label" variant="outlined" startIcon={<UploadRoundedIcon />}>
+                  {uploadingKey === 'product-detail-bottom-cta-image' ? '上傳中...' : '上傳最底部 CTA 圖片'}
+                  <input
+                    hidden
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      if (file) {
+                        void uploadImage('product-detail-bottom-cta-image', file, (url) => {
+                          setContent((prev) => ({
+                            ...prev,
+                            product_detail: {
+                              ...prev.product_detail,
+                              bottom_cta: { ...prev.product_detail.bottom_cta, image_url: url },
+                            },
+                          }))
+                        })
+                      }
+                      event.currentTarget.value = ''
+                    }}
+                  />
+                </Button>
+                <Box
+                  component="img"
+                  src={content.product_detail.bottom_cta.image_url}
+                  alt="product-detail-bottom-cta"
+                  sx={{ width: { xs: '100%', md: 280 }, height: 100, objectFit: 'cover', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}
+                />
+              </Stack>
+            </Stack>
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Footer 文案">
+            <Stack spacing={1.5}>
               <TextField
                 label="Footer 標題"
                 value={content.footer.title}
@@ -680,7 +898,7 @@ const SiteContentPage = () => {
                 fullWidth
               />
             </Stack>
-          </Paper>
+          </CollapsibleSection>
         </Stack>
       ) : null}
     </Stack>

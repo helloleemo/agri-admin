@@ -36,6 +36,19 @@ export interface HomePageContent {
     description: string
     image_url: string
   }
+  product_detail: {
+    intro: {
+      title: string
+      description: string
+    }
+    bottom_cta: {
+      title: string
+      description: string
+      button_text: string
+      button_link: string
+      image_url: string
+    }
+  }
   footer: {
     title: string
     button_text: string
