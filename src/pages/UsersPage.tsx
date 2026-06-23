@@ -69,7 +69,6 @@ const UsersPage = () => {
   const [pageError, setPageError] = useState('')
   const [actionError, setActionError] = useState('')
   const [notice, setNotice] = useState('')
-  const [sendVerificationOnCreate, setSendVerificationOnCreate] = useState(true)
   const [markVerifiedOnCreate, setMarkVerifiedOnCreate] = useState(false)
   const [verificationLoading, setVerificationLoading] = useState(false)
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view' | null>(null)
@@ -126,7 +125,6 @@ const UsersPage = () => {
   const openCreateDialog = () => {
     setSelectedUser(null)
     setFormState(createEmptyForm())
-    setSendVerificationOnCreate(true)
     setMarkVerifiedOnCreate(false)
     setActionError('')
     setDialogMode('create')
@@ -148,7 +146,6 @@ const UsersPage = () => {
   const closeDialog = () => {
     setSelectedUser(null)
     setActionError('')
-    setSendVerificationOnCreate(true)
     setMarkVerifiedOnCreate(false)
     setDialogMode(null)
     setFormState(createEmptyForm())
@@ -235,11 +232,9 @@ const UsersPage = () => {
         if (markVerifiedOnCreate) {
           await usersService.verifyEmail(createdUser.id)
           setNotice('使用者已新增，並由管理員直接驗證')
-        } else if (sendVerificationOnCreate) {
+        } else {
           await authService.resendVerificationEmail({ email: payload.email })
           setNotice('使用者已新增，並已寄出驗證信')
-        } else {
-          setNotice('使用者已新增')
         }
       }
 
@@ -274,6 +269,8 @@ const UsersPage = () => {
       setVerificationLoading(true)
       setActionError('')
       await authService.resendVerificationEmail({ email })
+      setSelectedUser((prev) => (prev ? { ...prev, email_verified_at: null } : prev))
+      await fetchUsers()
       setNotice(`已重新寄送驗證信至 ${email}`)
     } catch (err) {
       setActionError(err instanceof Error ? err.message : '寄送驗證信失敗')
@@ -443,7 +440,6 @@ const UsersPage = () => {
         verificationLoading={verificationLoading}
         formState={formState}
         selectedUserVerified={Boolean(selectedUser?.email_verified_at)}
-        sendVerificationOnCreate={sendVerificationOnCreate}
         markVerifiedOnCreate={markVerifiedOnCreate}
         onClose={closeDialog}
         onSubmit={() => void handleSubmit()}
@@ -451,18 +447,7 @@ const UsersPage = () => {
         onEmailChange={(value) => setFormState((current) => ({ ...current, email: value }))}
         onPasswordChange={(value) => setFormState((current) => ({ ...current, password: value }))}
         onRoleChange={(value) => setFormState((current) => ({ ...current, role_code: value }))}
-        onToggleMarkVerifiedOnCreate={(checked) => {
-          setMarkVerifiedOnCreate(checked)
-          if (checked) {
-            setSendVerificationOnCreate(false)
-          }
-        }}
-        onToggleSendVerificationOnCreate={(checked) => {
-          setSendVerificationOnCreate(checked)
-          if (checked) {
-            setMarkVerifiedOnCreate(false)
-          }
-        }}
+        onToggleMarkVerifiedOnCreate={(checked) => setMarkVerifiedOnCreate(checked)}
         onAdminVerify={() => void handleAdminVerify()}
         onResendVerification={() => void handleResendVerification()}
       />
