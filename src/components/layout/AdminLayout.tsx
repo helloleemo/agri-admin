@@ -8,6 +8,7 @@ import StraightenRoundedIcon from '@mui/icons-material/StraightenRounded'
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded'
 import DiscountRoundedIcon from '@mui/icons-material/DiscountRounded'
 import MarkEmailReadRoundedIcon from '@mui/icons-material/MarkEmailReadRounded'
+import ArticleRoundedIcon from '@mui/icons-material/ArticleRounded'
 import { Box, Button, Divider, Stack, Typography } from '@mui/material'
 import { Outlet, useLocation, useNavigate, Link as RouterLink } from 'react-router-dom'
 import menuList from '@/settings/menu'
@@ -20,6 +21,7 @@ const iconMap = {
   庫存調整: <TuneRoundedIcon fontSize="small" />,
   訂單管理: <ReceiptLongRoundedIcon fontSize="small" />,
   Email範本設定: <MarkEmailReadRoundedIcon fontSize="small" />,
+  頁面內容管理: <ArticleRoundedIcon fontSize="small" />,
   優惠券管理: <DiscountRoundedIcon fontSize="small" />,
   使用者管理: <PeopleAltRoundedIcon fontSize="small" />,
 }
