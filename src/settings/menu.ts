@@ -18,12 +18,11 @@ const menuList = [
     link: `/${PATHS.products}`,
   },
   {
-    label: '庫存調整',
-    link: `/${PATHS.inventories}`,
-  },
-  {
     label: '訂單管理',
     link: `/${PATHS.orders}`,
+  },  {
+    label: '庫存調整',
+    link: `/${PATHS.inventories}`,
   },
   {
     label: 'Email範本設定',

@@ -38,10 +38,9 @@ export interface OrderUpdatePayload {
   orderer_name?: string | null
   orderer_phone?: string | null
   orderer_email?: string | null
-  subtotal_amount?: number
   discount_amount?: number
   shipping_fee?: number
-  total_amount?: number
+  manual_adjustment_amount?: number
   status_code?: number
   order_status_code?: number
   items?: OrderItemUpdatePayload[]
@@ -76,6 +75,7 @@ export interface OrderItemResponse {
   unit_id?: string | null
   product_name: string | null
   unit: string
+  unit_price: number | null
   quantity: number
 }
 
@@ -96,6 +96,7 @@ export interface OrderResponse {
   subtotal_amount: number
   discount_amount: number
   shipping_fee: number
+  manual_adjustment_amount: number
   total_amount: number
   bank_transfer_last5: string | null
   status_code: number
