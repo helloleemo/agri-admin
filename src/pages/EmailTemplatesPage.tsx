@@ -32,6 +32,7 @@ const ORDER_STATUS_CODE = {
 
 const AUTH_TEMPLATE_TYPE = {
   REGISTRATION_VERIFICATION: 1,
+  PASSWORD_RESET: 2,
 } as const
 
 const statusLabelMap: Record<number, string> = {
@@ -112,13 +113,23 @@ const ORDER_TEMPLATE_FALLBACKS: Record<
 }
 
 const REGISTRATION_FALLBACK = {
-  subject: '農產品交易平台 - 驗證您的電子郵件',
+  subject: 'MEGARANG平台 - 驗證您的電子郵件',
   body:
-    '歡迎使用農產品交易平台。\n\n'
+    '歡迎使用MEGARANG平台。\n\n'
     + '請通過打開此連結來驗證您的電子郵件:\n{verification_link}\n\n'
     + '如果您無法點擊連結，請將以上網址複製並貼到瀏覽器中。\n\n'
-    + '如果您沒有註冊過農產品交易平台，請忽略這封郵件。\n\n'
+    + '如果您沒有註冊過MEGARANG平台，請忽略這封郵件。\n\n'
     + '若連結失效，您可以在登入頁面點擊「重新發送驗證郵件」來獲取新的驗證連結。\n\n'
+    + '此連結在 {expires_minutes} 分鐘後過期。',
+}
+
+const PASSWORD_RESET_FALLBACK = {
+  subject: 'MEGARANG平台 - 重設您的密碼',
+  body:
+    '您好，\n\n'
+    + '我們收到一筆重設密碼請求。請點擊以下連結設定新密碼：\n{reset_link}\n\n'
+    + '若您無法直接點擊連結，請將上述網址複製到瀏覽器開啟。\n\n'
+    + '如果這不是您本人操作，請忽略此信件。\n\n'
     + '此連結在 {expires_minutes} 分鐘後過期。',
 }
 
@@ -138,6 +149,8 @@ const EmailTemplatesPage = () => {
   const [authTemplates, setAuthTemplates] = useState<AuthEmailTemplateResponse[]>([])
   const [registrationSubject, setRegistrationSubject] = useState('')
   const [registrationBody, setRegistrationBody] = useState('')
+  const [passwordResetSubject, setPasswordResetSubject] = useState('')
+  const [passwordResetBody, setPasswordResetBody] = useState('')
   const [authTemplateSaving, setAuthTemplateSaving] = useState(false)
 
   const selectedOrderFallback =
@@ -145,6 +158,11 @@ const EmailTemplatesPage = () => {
 
   const registrationTemplate = useMemo(
     () => authTemplates.find((item) => item.template_type === AUTH_TEMPLATE_TYPE.REGISTRATION_VERIFICATION),
+    [authTemplates],
+  )
+
+  const passwordResetTemplate = useMemo(
+    () => authTemplates.find((item) => item.template_type === AUTH_TEMPLATE_TYPE.PASSWORD_RESET),
     [authTemplates],
   )
 
@@ -183,6 +201,12 @@ const EmailTemplatesPage = () => {
       )
       setRegistrationSubject(registration?.subject_template ?? '')
       setRegistrationBody(registration?.body_template ?? '')
+
+      const passwordReset = authEmailTemplates.find(
+        (item) => item.template_type === AUTH_TEMPLATE_TYPE.PASSWORD_RESET,
+      )
+      setPasswordResetSubject(passwordReset?.subject_template ?? '')
+      setPasswordResetBody(passwordReset?.body_template ?? '')
     } catch (err) {
       setError(err instanceof Error ? err.message : '載入 Email 範本失敗')
     } finally {
@@ -238,6 +262,33 @@ const EmailTemplatesPage = () => {
       setNotice('註冊驗證信 Email 範本已儲存')
     } catch (err) {
       setError(err instanceof Error ? err.message : '儲存註冊驗證信 Email 範本失敗')
+    } finally {
+      setAuthTemplateSaving(false)
+    }
+  }
+
+  const handleSavePasswordResetTemplate = async () => {
+    try {
+      setAuthTemplateSaving(true)
+      setError('')
+      const updated = await authEmailTemplatesService.update(
+        AUTH_TEMPLATE_TYPE.PASSWORD_RESET,
+        {
+          subject_template: passwordResetSubject.trim() || null,
+          body_template: passwordResetBody.trim() || null,
+        },
+      )
+
+      setAuthTemplates((prev) => {
+        const found = prev.some((item) => item.template_type === updated.template_type)
+        if (found) {
+          return prev.map((item) => (item.template_type === updated.template_type ? updated : item))
+        }
+        return [...prev, updated]
+      })
+      setNotice('重設密碼信 Email 範本已儲存')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '儲存重設密碼信 Email 範本失敗')
     } finally {
       setAuthTemplateSaving(false)
     }
@@ -413,6 +464,63 @@ const EmailTemplatesPage = () => {
                 </Box>
 
                 {registrationTemplate && registrationTemplate.subject_template === null && registrationTemplate.body_template === null ? (
+                  <Typography variant="caption" color="text.secondary">
+                    目前此範本為空，寄信時會使用系統預設內容。
+                  </Typography>
+                ) : null}
+              </Stack>
+            </Paper>
+
+            <Paper variant="outlined" sx={{ p: 1.8 }}>
+              <Stack spacing={1.4}>
+                <Typography variant="h6">重設密碼信範本</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  可用變數：{'{reset_link}'}, {'{expires_minutes}'}, {'{token}'}, {'{email}'}
+                </Typography>
+
+                <TextField
+                  label="信件主旨"
+                  fullWidth
+                  value={passwordResetSubject}
+                  onChange={(event) => setPasswordResetSubject(event.target.value)}
+                />
+                <TextField
+                  label="信件內容"
+                  multiline
+                  minRows={8}
+                  fullWidth
+                  value={passwordResetBody}
+                  onChange={(event) => setPasswordResetBody(event.target.value)}
+                />
+
+                <Accordion disableGutters sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                    <Typography variant="subtitle2">系統預設（重設密碼信）</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ bgcolor: 'grey.50' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      主旨
+                    </Typography>
+                    <Typography sx={{ mb: 1.2 }}>{PASSWORD_RESET_FALLBACK.subject}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      內容
+                    </Typography>
+                    <Typography sx={{ whiteSpace: 'pre-wrap' }}>{PASSWORD_RESET_FALLBACK.body}</Typography>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<SaveRoundedIcon />}
+                    onClick={() => void handleSavePasswordResetTemplate()}
+                    disabled={authTemplateSaving}
+                  >
+                    {authTemplateSaving ? '儲存中...' : '儲存重設密碼範本'}
+                  </Button>
+                </Box>
+
+                {passwordResetTemplate && passwordResetTemplate.subject_template === null && passwordResetTemplate.body_template === null ? (
                   <Typography variant="caption" color="text.secondary">
                     目前此範本為空，寄信時會使用系統預設內容。
                   </Typography>

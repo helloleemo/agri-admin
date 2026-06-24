@@ -39,14 +39,14 @@ const currencyFormatter = new Intl.NumberFormat('zh-TW', {
 
 const statusOptions: ProductStatusOption[] = [
   { value: 1, label: '啟用', color: 'success' },
-  { value: 2, label: '停用', color: 'warning' },
+  { value: 2, label: '停用', color: 'default' },
   // { value: 3, label: '刪除', color: 'default' },
 ]
 
-const createEmptyUnit = (): ProductUnitFormRow => ({
+const createEmptyUnit = (stock = ''): ProductUnitFormRow => ({
   unit_id: '',
   price: '',
-  stock: '',
+  stock,
 })
 
 const createEmptyForm = (categoryId = ''): ProductFormState => ({
@@ -401,7 +401,7 @@ const ProductsPage = () => {
   const addUnitRow = () => {
     setFormState((current) => ({
       ...current,
-      units: [...current.units, createEmptyUnit()],
+      units: [...current.units, createEmptyUnit(dialogMode === 'edit' ? '0' : '')],
     }))
   }
 
@@ -652,7 +652,7 @@ const ProductsPage = () => {
     <Paper sx={{ p: 2.4 }}>
       <PageToolbar
         title="商品管理"
-        description="維護商品資料、分類、單位價格與庫存"
+        description="維護商品資料、分類與單位價格；庫存請至「庫存調整」頁操作"
         keyword={keyword}
         searchPlaceholder="搜尋商品名稱、分類或產地"
         onKeywordChange={setKeyword}

@@ -16,7 +16,6 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@mui/material'
 import { ordersService, productService, usersService } from '@/api'
@@ -41,9 +40,7 @@ interface LowStockItem {
   id: string
   name: string
   threshold: number
-  minUnitStock: number
-  minUnitName: string
-  totalStock: number
+  currentStock: number
 }
 
 const DashboardPage = () => {
@@ -65,10 +62,6 @@ const DashboardPage = () => {
       setGlobalLowStockThreshold(parsed)
     }
   }, [])
-
-  useEffect(() => {
-    window.localStorage.setItem(DASHBOARD_LOW_STOCK_THRESHOLD_KEY, String(globalLowStockThreshold))
-  }, [globalLowStockThreshold])
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -129,22 +122,18 @@ const DashboardPage = () => {
     return products
       .map((product) => {
         const threshold = product.low_stock_threshold ?? globalLowStockThreshold
-        const minUnit = product.units.length
-          ? product.units.reduce((lowest, current) => (current.stock < lowest.stock ? current : lowest), product.units[0])
-          : null
+        const currentStock = product.units.reduce((sum, unit) => sum + unit.stock, 0)
 
         return {
           id: product.id,
           name: product.name,
           threshold,
-          minUnitStock: minUnit?.stock ?? 0,
-          minUnitName: minUnit?.unit_name || '未命名單位',
-          totalStock: product.units.reduce((sum, unit) => sum + unit.stock, 0),
-          hasLowUnit: product.units.length > 0 && product.units.some((unit) => unit.stock <= threshold),
+          currentStock,
+          hasLowStock: currentStock <= threshold,
         }
       })
-      .filter((item) => item.hasLowUnit)
-      .sort((a, b) => a.minUnitStock - b.minUnitStock)
+      .filter((item) => item.hasLowStock)
+      .sort((a, b) => a.currentStock - b.currentStock)
       .slice(0, 5)
   }, [globalLowStockThreshold, products])
 
@@ -225,23 +214,9 @@ const DashboardPage = () => {
               <WarningAmberRoundedIcon color="warning" />
               <Typography variant="h6">低庫存提醒</Typography>
             </Stack>
-            <TextField
-              label="全域低庫存門檻"
-              type="number"
-              value={globalLowStockThreshold}
-              onChange={(event) => {
-                const next = Number(event.target.value)
-                if (Number.isNaN(next)) {
-                  return
-                }
-                setGlobalLowStockThreshold(Math.max(0, Math.floor(next)))
-              }}
-              size="small"
-              fullWidth
-              slotProps={{ htmlInput: { min: 0, step: 1 } }}
-              helperText="未設定商品門檻時，套用此全域值"
-              sx={{ mb: 1.5 }}
-            />
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.2 }}>
+              目前全域門檻：{globalLowStockThreshold}
+            </Typography>
             <Stack spacing={1.1}>
               {lowStock.map((item) => (
                 <Box
@@ -256,12 +231,14 @@ const DashboardPage = () => {
                   }}
                 >
                   <Box>
-                    <Typography variant="body2">{item.name}</Typography>
+                    <Typography variant="body2">
+                      {item.name}
+                    </Typography>
+
                     <Typography variant="caption" color="text.secondary">
-                      {item.minUnitName} 最低 {item.minUnitStock}（門檻 {item.threshold}）
+                      目前庫存 / 庫存門檻：{item.currentStock} / {item.threshold}
                     </Typography>
                   </Box>
-                  <Chip label={`總庫存 ${item.totalStock}`} size="small" color="warning" />
                 </Box>
               ))}
               {!lowStock.length ? <Typography color="text.secondary">目前沒有低庫存商品</Typography> : null}

@@ -263,7 +263,7 @@ const SiteContentPage = () => {
   return (
     <Stack spacing={2}>
       <PageToolbar
-        title="首頁內容管理"
+        title="頁面內容管理"
         description="管理首頁、訂單查詢與商品詳情頁底部文案。"
         titleIcon={<ImageRoundedIcon color="primary" />}
         onRefresh={() => void loadContent()}
@@ -679,10 +679,19 @@ const SiteContentPage = () => {
             </Stack>
           </CollapsibleSection>
 
-          <CollapsibleSection title="商品詳情頁底部內容">
+          <CollapsibleSection title="商品詳情頁內容">
             <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary">
+                商品詳情頁包含三個區塊：介紹區塊 + 底部CTA區塊
+              </Typography>
+
+              <Divider />
+
+              <Typography variant="subtitle2" sx={{ mt: 2 }}>
+                介紹區塊1
+              </Typography>
               <TextField
-                label="底部介紹區塊標題"
+                label="介紹區塊1 標題"
                 value={content.product_detail.intro.title}
                 onChange={(event) =>
                   setContent((prev) => ({
@@ -696,7 +705,7 @@ const SiteContentPage = () => {
                 fullWidth
               />
               <TextField
-                label="底部介紹區塊說明"
+                label="介紹區塊1 說明"
                 value={content.product_detail.intro.description}
                 onChange={(event) =>
                   setContent((prev) => ({
@@ -714,8 +723,11 @@ const SiteContentPage = () => {
 
               <Divider />
 
+              <Typography variant="subtitle2" sx={{ mt: 2 }}>
+                CTA 區塊
+              </Typography>
               <TextField
-                label="最底部 CTA 標題"
+                label="CTA 標題"
                 value={content.product_detail.bottom_cta.title}
                 onChange={(event) =>
                   setContent((prev) => ({
@@ -729,7 +741,7 @@ const SiteContentPage = () => {
                 fullWidth
               />
               <TextField
-                label="最底部 CTA 說明"
+                label="CTA 說明"
                 value={content.product_detail.bottom_cta.description}
                 onChange={(event) =>
                   setContent((prev) => ({
@@ -746,7 +758,7 @@ const SiteContentPage = () => {
               />
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
                 <TextField
-                  label="最底部 CTA 按鈕文字"
+                  label="CTA 按鈕文字"
                   value={content.product_detail.bottom_cta.button_text}
                   onChange={(event) =>
                     setContent((prev) => ({
@@ -760,7 +772,7 @@ const SiteContentPage = () => {
                   fullWidth
                 />
                 <TextField
-                  label="最底部 CTA 按鈕連結"
+                  label="CTA 按鈕連結"
                   value={content.product_detail.bottom_cta.button_link}
                   onChange={(event) =>
                     setContent((prev) => ({
@@ -775,7 +787,7 @@ const SiteContentPage = () => {
                 />
               </Stack>
               <TextField
-                label="最底部 CTA 背景圖 URL"
+                label="CTA 背景圖 URL"
                 value={content.product_detail.bottom_cta.image_url}
                 onChange={(event) =>
                   setContent((prev) => ({
@@ -788,7 +800,7 @@ const SiteContentPage = () => {
                 }
                 fullWidth
               />
-                            <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary">
                 可上傳圖片或直接輸入圖片 URL，完成後記得按右上角的儲存按鈕才會生效。
               </Typography>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>

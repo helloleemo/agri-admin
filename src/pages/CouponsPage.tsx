@@ -14,7 +14,7 @@ import PageToolbar from '@/components/layout/PageToolbar'
 
 const statusOptions = [
   { value: 1, label: '啟用', color: 'success' as const },
-  { value: 2, label: '停用', color: 'warning' as const },
+  { value: 2, label: '停用', color: 'default' as const },
 //   { value: 3, label: '刪除', color: 'default' as const },
 ]
 
@@ -226,7 +226,13 @@ const CouponsPage = () => {
         return <Chip label={option?.label || '-'} color={option?.color} size="small" />
       },
     },
-    { field: 'created_at', headerName: '建立時間', width: 180, renderCell: ({ value }) => formatDateTime(value) },
+    // { field: 'created_at', headerName: '建立時間', width: 180, renderCell: ({ value }) => formatDateTime(value) },
+    {
+      field: 'updated_at',
+      headerName: '更新時間',
+      minWidth: 170,
+      valueGetter: (_, row) => formatDateTime(row.updated_at),
+    },
     {
       field: 'actions',
       headerName: '操作',
