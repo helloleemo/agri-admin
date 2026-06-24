@@ -35,6 +35,7 @@ export type ProductFormState = {
   category_id: string
   origin: string
   description: string
+  low_stock_threshold: string
   status_code: StatusCode
   units: ProductUnitFormRow[]
 }
@@ -59,6 +60,7 @@ type ProductFormDialogProps = {
   onNameChange: (value: string) => void
   onCategoryChange: (value: string) => void
   onOriginChange: (value: string) => void
+  onLowStockThresholdChange: (value: string) => void
   onStatusChange: (value: StatusCode) => void
   onDescriptionChange: (value: string) => void
   onAddUnitRow: () => void
@@ -94,6 +96,7 @@ export const ProductFormDialog = ({
   onNameChange,
   onCategoryChange,
   onOriginChange,
+  onLowStockThresholdChange,
   onStatusChange,
   onDescriptionChange,
   onAddUnitRow,
@@ -132,6 +135,15 @@ export const ProductFormDialog = ({
           </TextField>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
             <TextField label="產地" value={formState.origin} onChange={(event) => onOriginChange(event.target.value)} fullWidth />
+            <TextField
+              label="低庫存門檻（商品覆蓋）"
+              type="number"
+              value={formState.low_stock_threshold}
+              onChange={(event) => onLowStockThresholdChange(event.target.value)}
+              fullWidth
+              helperText="留空表示使用儀表板全域門檻"
+              slotProps={{ htmlInput: { min: 0, step: 1 } }}
+            />
             <TextField
               label="狀態"
               select
@@ -453,6 +465,15 @@ export const ProductViewDialog = ({
                     `狀態 ${selectedProduct.status_code}`}
                 </Typography>
               </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  低庫存門檻
+                </Typography>
+                <Typography>{selectedProduct.low_stock_threshold ?? '使用全域設定'}</Typography>
+              </Box>
+            </Stack>
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <Box sx={{ flex: 1 }}>
                 <Typography variant="caption" color="text.secondary">
                   建立時間

@@ -65,7 +65,7 @@ const CategoriesPage = () => {
         categoriesService.getList({ skip: 0, limit: 100 }),
         productService.getList({ skip: 0, limit: 100 }),
       ])
-      console.log('Fetched categories:', categoryData)
+      // console.log('Fetched categories:', categoryData)
       setCategories(categoryData)
       setProducts(productData)
     } catch (err) {
