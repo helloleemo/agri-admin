@@ -115,6 +115,7 @@ const OrdersPage = () => {
   const [saveLoading, setSaveLoading] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<OrderResponse | null>(null)
+  const isDeliveredOrder = editingOrder?.order_status_code === ORDER_STATUS_CODE.DELIVERED
 
   const fetchOrders = async () => {
     try {
@@ -232,9 +233,15 @@ const OrdersPage = () => {
   }
 
   const statusChanged = Boolean(editingOrder) && nextStatusCode !== (editingOrder?.order_status_code ?? nextStatusCode)
+  const adminNoteChanged = Boolean(editingOrder) && adminNote.trim() !== (editingOrder?.admin_note ?? '').trim()
 
   const requestSaveOrder = () => {
     if (!editingOrder) {
+      return
+    }
+
+    if (isDeliveredOrder && nextStatusCode !== ORDER_STATUS_CODE.DELIVERED) {
+      setActionError('已送達的訂單不能退回其他狀態')
       return
     }
 
@@ -316,6 +323,21 @@ const OrdersPage = () => {
     try {
       setSaveLoading(true)
       setActionError('')
+
+      if (isDeliveredOrder) {
+        if (!adminNoteChanged) {
+          setNotice('管理員備注未變更')
+          closeEditDialog()
+          return
+        }
+
+        const nextNote = adminNote.trim() || null
+        await ordersService.updateAdminNote(editingOrder.id, nextNote)
+        setNotice('管理員備注已更新')
+        setRefreshVersion((prev) => prev + 1)
+        closeEditDialog()
+        return
+      }
 
       const discountAmount = parseNonNegativeInt(editingDiscount, '折扣')
       const shippingFee = parseNonNegativeInt(editingShippingFee, '運費')
@@ -619,13 +641,24 @@ const OrdersPage = () => {
               value={nextStatusCode}
               onChange={(event) => setNextStatusCode(Number(event.target.value))}
               fullWidth
+              disabled={isDeliveredOrder}
             >
               {statusOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
+                <MenuItem
+                  key={option.value}
+                  value={option.value}
+                  disabled={isDeliveredOrder && option.value !== ORDER_STATUS_CODE.DELIVERED}
+                >
                   {option.label}
                 </MenuItem>
               ))}
             </TextField>
+
+            {isDeliveredOrder ? (
+              <Alert severity="warning">
+                此訂單已送達，狀態不可退回其他階段，只能維持「已送達」。
+              </Alert>
+            ) : null}
 
             <TextField
               label="管理員備注"
@@ -637,90 +670,93 @@ const OrdersPage = () => {
               value={adminNote}
               onChange={(event) => setAdminNote(event.target.value)}
             />
-            <Typography variant="body2" color="text.secondary">
-              訂單項目調整（僅可編輯數量）
-            </Typography>
-            <Stack spacing={1.2}>
-              {editingItems.map((item, index) => (
-                <Paper key={`${item.product_id}-${index}`} variant="outlined" sx={{ p: 1.4 }}>
-                  <Stack spacing={1.1}>
-                    <Typography sx={{ fontWeight: 700 }}>
-                      {item.product_name || item.product_id}
-                    </Typography>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
-                      <TextField
-                        label="單位"
-                        fullWidth
-                        value={item.unit}
-                        disabled
-                      />
-                      <TextField
-                        label="數量"
-                        type="number"
-                        fullWidth
-                        value={item.quantity}
-                        onChange={(event) => handleItemChange(index, 'quantity', event.target.value)}
-                        slotProps={{ htmlInput: { min: 1, step: 1 } }}
-                      />
-                    </Stack>
-                  </Stack>
-                </Paper>
-              ))}
-            </Stack>
-            <Typography variant="subtitle2" sx={{ pt: 1 }}>
-              訂單金額與項目調整（管理員）
-            </Typography>
+            {isDeliveredOrder ? (
+              <Alert severity="info">
+                此訂單已送達，除了管理員備注外，其餘訂單內容皆不可編輯。
+              </Alert>
+            ) : (
+              <>
+                <Typography variant="body2" color="text.secondary">
+                  訂單項目調整（僅可編輯數量）
+                </Typography>
+                <Stack spacing={1.2}>
+                  {editingItems.map((item, index) => (
+                    <Paper key={`${item.product_id}-${index}`} variant="outlined" sx={{ p: 1.4 }}>
+                      <Stack spacing={1.1}>
+                        <Typography sx={{ fontWeight: 700 }}>
+                          {item.product_name || item.product_id}
+                        </Typography>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
+                          <TextField label="單位" fullWidth value={item.unit} disabled />
+                          <TextField
+                            label="數量"
+                            type="number"
+                            fullWidth
+                            value={item.quantity}
+                            onChange={(event) => handleItemChange(index, 'quantity', event.target.value)}
+                            slotProps={{ htmlInput: { min: 1, step: 1 } }}
+                          />
+                        </Stack>
+                      </Stack>
+                    </Paper>
+                  ))}
+                </Stack>
+                <Typography variant="subtitle2" sx={{ pt: 1 }}>
+                  訂單金額與項目調整（管理員）
+                </Typography>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
-              <TextField
-                label="商品小計"
-                type="number"
-                fullWidth
-                value={editingSubtotal}
-                disabled
-                slotProps={{ input: { readOnly: true }, htmlInput: { readOnly: true } }}
-                helperText="依訂單品項與數量自動重算"
-              />
-              <TextField
-                label="折扣"
-                type="number"
-                fullWidth
-                value={editingDiscount}
-                onChange={(event) => setEditingDiscount(event.target.value)}
-              />
-            </Stack>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
+                  <TextField
+                    label="商品小計"
+                    type="number"
+                    fullWidth
+                    value={editingSubtotal}
+                    disabled
+                    slotProps={{ input: { readOnly: true }, htmlInput: { readOnly: true } }}
+                    helperText="依訂單品項與數量自動重算"
+                  />
+                  <TextField
+                    label="折扣"
+                    type="number"
+                    fullWidth
+                    value={editingDiscount}
+                    onChange={(event) => setEditingDiscount(event.target.value)}
+                  />
+                </Stack>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
-              <TextField
-                label="運費"
-                type="number"
-                fullWidth
-                value={editingShippingFee}
-                onChange={(event) => setEditingShippingFee(event.target.value)}
-              />
-              <TextField
-                label="人工調整金額"
-                type="number"
-                fullWidth
-                value={editingManualAdjustment}
-                onChange={(event) => setEditingManualAdjustment(event.target.value)}
-                helperText="可輸入正數或負數，例如補差額或折讓"
-              />
-            </Stack>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2}>
+                  <TextField
+                    label="運費"
+                    type="number"
+                    fullWidth
+                    value={editingShippingFee}
+                    onChange={(event) => setEditingShippingFee(event.target.value)}
+                  />
+                  <TextField
+                    label="人工調整金額"
+                    type="number"
+                    fullWidth
+                    value={editingManualAdjustment}
+                    onChange={(event) => setEditingManualAdjustment(event.target.value)}
+                    helperText="可輸入正數或負數，例如補差額或折讓"
+                  />
+                </Stack>
 
-            <TextField
-              label="總計"
-              type="number"
-              fullWidth
-              value={editingTotal}
-              disabled
-              slotProps={{ input: { readOnly: true }, htmlInput: { readOnly: true } }}
-              helperText="依 小計 - 折扣 + 運費 + 人工調整金額 自動計算"
-            />
+                <TextField
+                  label="總計"
+                  type="number"
+                  fullWidth
+                  value={editingTotal}
+                  disabled
+                  slotProps={{ input: { readOnly: true }, htmlInput: { readOnly: true } }}
+                  helperText="依 小計 - 折扣 + 運費 + 人工調整金額 自動計算"
+                />
 
-            <Typography variant="body2" color="text.secondary">
-              每筆品項單價以訂單當前商品規格價格計算，小計與總計不可直接修改。
-            </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  每筆品項單價以訂單當前商品規格價格計算，小計與總計不可直接修改。
+                </Typography>
+              </>
+            )}
 
 
 
@@ -729,8 +765,12 @@ const OrdersPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={closeEditDialog} disabled={saveLoading}>取消</Button>
-          <Button onClick={requestSaveOrder} variant="contained" disabled={saveLoading}>
-            {saveLoading ? '儲存中...' : '儲存'}
+          <Button
+            onClick={requestSaveOrder}
+            variant="contained"
+            disabled={saveLoading || (isDeliveredOrder && !adminNoteChanged)}
+          >
+            {saveLoading ? '儲存中...' : isDeliveredOrder ? '儲存備注' : '儲存'}
           </Button>
         </DialogActions>
       </Dialog>
