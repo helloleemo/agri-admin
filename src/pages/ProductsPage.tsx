@@ -54,6 +54,7 @@ const createEmptyForm = (categoryId = ''): ProductFormState => ({
   category_id: categoryId,
   origin: '',
   description: '',
+  low_stock_threshold: '',
   status_code: 1,
   units: [createEmptyUnit()],
 })
@@ -86,6 +87,10 @@ const buildFormState = (product: ProductResponse): ProductFormState => ({
   category_id: product.category_id,
   origin: product.origin ?? '',
   description: product.description ?? '',
+  low_stock_threshold:
+    product.low_stock_threshold === null || product.low_stock_threshold === undefined
+      ? ''
+      : String(product.low_stock_threshold),
   status_code: product.status_code,
   units: product.units.length
     ? product.units.map((unit) => ({
@@ -420,6 +425,10 @@ const ProductsPage = () => {
       return '請至少新增一筆商品單位'
     }
 
+    if (formState.low_stock_threshold && toIntegerOrNull(formState.low_stock_threshold) === null) {
+      return '低庫存門檻必須是大於等於 0 的整數，或留空使用全域設定'
+    }
+
     const seenUnits = new Set<string>()
 
     for (const [index, unit] of formState.units.entries()) {
@@ -469,6 +478,11 @@ const ProductsPage = () => {
     }
 
     const seenUnits = new Set<string>()
+
+    if (formState.low_stock_threshold && toIntegerOrNull(formState.low_stock_threshold) === null) {
+      return true
+    }
+
     for (const unit of formState.units) {
       if (!unit.unit_id || seenUnits.has(unit.unit_id)) {
         return true
@@ -496,6 +510,7 @@ const ProductsPage = () => {
       category_id: formState.category_id,
       origin: toNullableText(formState.origin),
       description: toNullableText(formState.description),
+      low_stock_threshold: toIntegerOrNull(formState.low_stock_threshold),
       status_code: formState.status_code,
       units,
     }
@@ -705,6 +720,7 @@ const ProductsPage = () => {
         onNameChange={(value) => updateFormField('name', value)}
         onCategoryChange={(value) => updateFormField('category_id', value)}
         onOriginChange={(value) => updateFormField('origin', value)}
+        onLowStockThresholdChange={(value) => updateFormField('low_stock_threshold', value)}
         onStatusChange={(value) => updateFormField('status_code', value)}
         onDescriptionChange={(value) => updateFormField('description', value)}
         onAddUnitRow={addUnitRow}

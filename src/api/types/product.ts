@@ -36,6 +36,7 @@ export interface ProductResponse {
   category_name: string | null
   origin: string | null
   description: string | null
+  low_stock_threshold: number | null
   images: ProductImageResponse[] | null
   units: ProductUnitResponse[]
   status_code: StatusCode
@@ -49,6 +50,7 @@ export interface ProductCreatePayload {
   category_name?: string | null
   origin?: string | null
   description?: string | null
+  low_stock_threshold?: number | null
   images?: ProductImageResponse[] | null
   status_code?: StatusCode
   units: ProductUnitCreatePayload[]
@@ -60,6 +62,7 @@ export interface ProductUpdatePayload {
   category_name?: string | null
   origin?: string | null
   description?: string | null
+  low_stock_threshold?: number | null
   images?: ProductImageResponse[] | null
   status_code?: StatusCode
   units?: ProductUnitUpdatePayload[]
