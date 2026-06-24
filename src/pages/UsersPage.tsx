@@ -338,20 +338,20 @@ const UsersPage = () => {
       minWidth: 120,
       valueGetter: (_, row) => roleLabelMap[row.role_code] || `角色 ${row.role_code}`,
     },
-    {
-      field: 'status_code',
-      headerName: '狀態',
-      minWidth: 120,
-      sortable: false,
-      renderCell: (params) => (
-        <Chip
-          label={statusLabelMap[params.row.status_code] || `狀態 ${params.row.status_code}`}
-          size="small"
-          color={params.row.status_code === 1 ? 'success' : 'default'}
-          variant={params.row.status_code === 1 ? 'filled' : 'outlined'}
-        />
-      ),
-    },
+    // {
+    //   field: 'status_code',
+    //   headerName: '狀態',
+    //   minWidth: 120,
+    //   sortable: false,
+    //   renderCell: (params) => (
+    //     <Chip
+    //       label={statusLabelMap[params.row.status_code] || `狀態 ${params.row.status_code}`}
+    //       size="small"
+    //       color={params.row.status_code === 1 ? 'success' : 'default'}
+    //       variant={params.row.status_code === 1 ? 'filled' : 'outlined'}
+    //     />
+    //   ),
+    // },
     {
       field: 'email_verified_at',
       headerName: '認證',
@@ -365,6 +365,11 @@ const UsersPage = () => {
           variant={params.row.email_verified_at ? 'filled' : 'outlined'}
         />
       ),
+    },    {
+      field: 'updated_at',
+      headerName: '更新時間',
+      minWidth: 170,
+      valueGetter: (_, row) => formatDateTime(row.updated_at),
     },
     {
       field: 'actions',

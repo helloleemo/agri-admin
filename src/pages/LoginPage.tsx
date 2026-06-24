@@ -44,10 +44,10 @@ const LoginPage = () => {
       <Paper sx={{ width: '100%', maxWidth: 460, p: 4 }}>
         <Stack spacing={2.4} component="form" onSubmit={handleSubmit}>
           <Box>
-            <Typography variant="h4" sx={{ mb: 0.8 }}>
-              AGRI ADMIN
+            <Typography variant="h5" sx={{ mb: 0.8 }}>
+              電商管理平台
             </Typography>
-            <Typography color="text.secondary">請先登入後再進入管理後台</Typography>
+            <Typography color="text.secondary">登入後可管理後台功能</Typography>
           </Box>
 
           {error ? <Alert severity="error">{error}</Alert> : null}

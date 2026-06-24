@@ -21,6 +21,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { inventoriesService, productService, type InventoryBalanceResponse, type InventoryLedgerResponse, type ProductResponse } from '@/api'
 import PageToolbar from '@/components/layout/PageToolbar'
 
+const DEFAULT_LOW_STOCK_THRESHOLD = 10
+const DASHBOARD_LOW_STOCK_THRESHOLD_KEY = 'agri-admin:dashboard-low-stock-threshold'
+
 const formatDateTime = (value: string) => {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('zh-TW')
@@ -35,6 +38,8 @@ const InventoriesPage = () => {
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [globalLowStockThreshold, setGlobalLowStockThreshold] = useState(DEFAULT_LOW_STOCK_THRESHOLD)
+  const [globalLowStockThresholdDraft, setGlobalLowStockThresholdDraft] = useState(DEFAULT_LOW_STOCK_THRESHOLD)
 
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [adjustError, setAdjustError] = useState('')
@@ -84,6 +89,25 @@ const InventoriesPage = () => {
 
     return () => window.clearTimeout(timerId)
   }, [])
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(DASHBOARD_LOW_STOCK_THRESHOLD_KEY)
+    if (!saved) {
+      return
+    }
+
+    const parsed = Number(saved)
+    if (Number.isInteger(parsed) && parsed >= 0) {
+      setGlobalLowStockThreshold(parsed)
+      setGlobalLowStockThresholdDraft(parsed)
+    }
+  }, [])
+
+  const saveGlobalLowStockThreshold = () => {
+    setGlobalLowStockThreshold(globalLowStockThresholdDraft)
+    window.localStorage.setItem(DASHBOARD_LOW_STOCK_THRESHOLD_KEY, String(globalLowStockThresholdDraft))
+    setNotice('全域庫存門檻已更新')
+  }
 
   const productOptions = useMemo(() => {
     const map = new Map<string, string>()
@@ -337,6 +361,48 @@ const InventoriesPage = () => {
           {notice}
         </Alert>
       ) : null}
+
+      {/* <Paper variant="outlined" sx={{ p: 1.2, py: 3, mb: 2 }}> */}
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}
+        sx={{
+          alignItems: { md: 'center' },
+          p: 1.2,
+          py: 2.5,
+          mb: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1.5,
+        }}>
+          <Typography variant="subtitle2" sx={{ minWidth: { md: 140 } }}>
+            全域庫存門檻
+          </Typography>
+          <TextField
+            label="全域庫存門檻"
+            type="number"
+            value={globalLowStockThresholdDraft}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              if (Number.isNaN(next)) {
+                return
+              }
+              setGlobalLowStockThresholdDraft(Math.max(0, Math.floor(next)))
+            }}
+            size="small"
+            sx={{ maxWidth: 220 }}
+            slotProps={{ htmlInput: { min: 0, step: 1 } }}
+          />
+          <Button
+            variant="contained"
+            onClick={saveGlobalLowStockThreshold}
+            disabled={globalLowStockThresholdDraft === globalLowStockThreshold}
+          >
+            確定
+        </Button>
+        <Typography variant="body2" color="text.secondary" sx={{ ml: 1.5 }}>
+          商品未設定門檻時，儀表板低庫存提醒會套用此值
+        </Typography>
+        </Stack>
+      {/* </Paper> */}
 
       <Stack spacing={2.4}>
         <Box>

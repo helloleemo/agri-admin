@@ -211,6 +211,8 @@ export const ProductFormDialog = ({
                     value={unit.stock}
                     onChange={(event) => onUnitFieldChange(index, 'stock', event.target.value)}
                     fullWidth
+                    disabled={mode === 'edit'}
+                    helperText={mode === 'edit' ? '編輯商品不直接改庫存，請到「庫存調整」頁操作' : undefined}
                     slotProps={{ htmlInput: { min: 0, step: 1 } }}
                   />
                   <IconButton
