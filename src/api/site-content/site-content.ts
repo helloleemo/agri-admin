@@ -52,6 +52,7 @@ export interface HomePageContent {
   footer: {
     title: string
     button_text: string
+    button_link: string
     description: string
     social_links: {
       facebook: string

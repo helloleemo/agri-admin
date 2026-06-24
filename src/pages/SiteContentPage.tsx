@@ -81,6 +81,7 @@ const defaultHomeContent: HomePageContent = {
   footer: {
     title: '與我們保持聯繫',
     button_text: '開始選購',
+    button_link: '/mekarang/products',
     description: '分享料理靈感、農場日常與最新檔期。追蹤我們，第一時間收到新品上市與優惠資訊。',
     social_links: {
       facebook: '',
@@ -164,6 +165,7 @@ const ensureHomeContent = (input: unknown): HomePageContent => {
     footer: {
       title: raw.footer?.title ?? fallback.footer.title,
       button_text: raw.footer?.button_text ?? fallback.footer.button_text,
+      button_link: raw.footer?.button_link ?? fallback.footer.button_link,
       description: raw.footer?.description ?? fallback.footer.description,
       social_links: {
         facebook: raw.footer?.social_links?.facebook ?? fallback.footer.social_links.facebook,
@@ -857,14 +859,24 @@ const SiteContentPage = () => {
                   fullWidth
                 />
                 <TextField
-                  label="Footer 描述"
-                  value={content.footer.description}
+                  label="Footer 按鈕連結"
+                  value={content.footer.button_link}
                   onChange={(event) =>
-                    setContent((prev) => ({ ...prev, footer: { ...prev.footer, description: event.target.value } }))
+                    setContent((prev) => ({ ...prev, footer: { ...prev.footer, button_link: event.target.value } }))
                   }
                   fullWidth
                 />
               </Stack>
+              <TextField
+                label="Footer 描述"
+                value={content.footer.description}
+                onChange={(event) =>
+                  setContent((prev) => ({ ...prev, footer: { ...prev.footer, description: event.target.value } }))
+                }
+                multiline
+                minRows={2}
+                fullWidth
+              />
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
                 <TextField
                   label="Facebook 連結（留空不顯示）"
