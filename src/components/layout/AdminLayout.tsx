@@ -62,10 +62,10 @@ const AdminLayout = () => {
         >
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.6 }}>
-              AGRI ADMIN
+              MEGARANG ADMIN
             </Typography>
             <Typography sx={{ color: 'rgba(255,255,255,0.86)' }}>
-              農業電商後台管理中心
+              電商後台管理中心
             </Typography>
           </Box>
           <Button
